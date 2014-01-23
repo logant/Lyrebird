@@ -331,7 +331,7 @@ namespace LMNA.Lyrebird.GH
                         }
 
                         // Parameters...
-                        if (Params.Input.Count > 6)
+                        if (Params.Input.Count > 7)
                         {
                             List<RevitObject> currentObjs = obj;
                             List<RevitObject> tempObjs = new List<RevitObject>();
@@ -339,7 +339,7 @@ namespace LMNA.Lyrebird.GH
                             {
                                 RevitObject ro = currentObjs[r];
                                 List<RevitParameter> revitParams = new List<RevitParameter>();
-                                for (int i = 6; i < Params.Input.Count; i++)
+                                for (int i = 7; i < Params.Input.Count; i++)
                                 {
                                     
                                     RevitParameter rp = new RevitParameter();
@@ -524,7 +524,7 @@ namespace LMNA.Lyrebird.GH
             if (inputParameters.Count > 0)
             {
                 // Find out how many parameters there are and if inputs should be added or removed.
-                if (inputParameters.Count == Params.Input.Count - 6)
+                if (inputParameters.Count == Params.Input.Count - 7)
                 {
                     // Parameters quantities match up with inputs, do nothing
                     RefreshParameters();
@@ -536,14 +536,14 @@ namespace LMNA.Lyrebird.GH
                 RecordUndoEvent("Sync Inputs");
 
                 //  Check if we need to add inputs
-                if (inputParameters.Count > Params.Input.Count - 6)
+                if (inputParameters.Count > Params.Input.Count - 7)
                 {
-                    for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 6; i++)
+                    for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 7; i++)
                     {
                         Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject();
-                        param.Name = "Parameter" + (i - 6).ToString();
-                        param.NickName = "P" + (i - 6).ToString();
-                        param.Description = "Parameter Name: " + inputParameters[i - 7].ParameterName + "\nIs Type: " + inputParameters[i - 7].IsType.ToString() + "\nStorageType: " + inputParameters[i - 7].StorageType;
+                        param.Name = "Parameter" + (i - 7).ToString();
+                        param.NickName = "P" + (i - 7).ToString();
+                        param.Description = "Parameter Name: " + inputParameters[i - 8].ParameterName + "\nIs Type: " + inputParameters[i - 8].IsType.ToString() + "\nStorageType: " + inputParameters[i - 8].StorageType;
                         param.Optional = true;
                         param.Access = GH_ParamAccess.tree;
                         Params.RegisterInputParam(param);
@@ -551,10 +551,10 @@ namespace LMNA.Lyrebird.GH
                 }
 
                 // Remove unnecessay inputs
-                else if (inputParameters.Count < Params.Input.Count - 6)
+                else if (inputParameters.Count < Params.Input.Count - 7)
                 {
                     //System.Windows.Forms.MessageBox.Show("Going to try and remove parameters.");
-                    while (Params.Input.Count > inputParameters.Count + 6)
+                    while (Params.Input.Count > inputParameters.Count + 7)
                     {
                         IGH_Param param = Params.Input[Params.Input.Count - 1];
                         Params.UnregisterInputParameter(param);
@@ -572,7 +572,7 @@ namespace LMNA.Lyrebird.GH
             {
                 try
                 {
-                    IGH_Param param = Params.Input[i + 6];
+                    IGH_Param param = Params.Input[i + 7];
                     if (paramNamesEnabled)
                     {
                         param.NickName = inputParameters[i].ParameterName;
