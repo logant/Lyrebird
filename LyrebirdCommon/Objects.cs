@@ -57,16 +57,16 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         public List<RevitParameter> Parameters { get; set; }
 
         [DataMember]
-        public Point Origin { get; set; }
+        public LyrebirdPoint Origin { get; set; }
 
         [DataMember]
-        public List<Point> AdaptivePoints { get; set; }
+        public List<LyrebirdPoint> AdaptivePoints { get; set; }
 
         [DataMember]
         public LyrebirdId UniqueID { get; set; }
 
         [DataMember]
-        public List<List<Point>> CurvePoints { get; set; }
+        public List<LyrebirdCurve> Curves { get; set; }
 
         [DataMember]
         public string GHPath { get; set; }
@@ -78,9 +78,12 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         //}
 
         [DataMember]
-        public Point Orientation { get; set; }
+        public LyrebirdPoint Orientation { get; set; }
 
-        public RevitObject(string family, string type, List<RevitParameter> parameters, Point origin, Point orient)
+        [DataMember]
+        public LyrebirdPoint FaceOrientation { get; set; }
+
+        public RevitObject(string family, string type, List<RevitParameter> parameters, LyrebirdPoint origin, LyrebirdPoint orient)
         {
             FamilyName = family;
             TypeName = type;
@@ -100,11 +103,11 @@ namespace LMNA.Lyrebird.LyrebirdCommon
             FamilyName = null;
             TypeName = null;
             Parameters = new List<RevitParameter>();
-            Origin = Point.Zero;
-            Orientation = Point.Zero;
+            Origin = LyrebirdPoint.Zero;
+            Orientation = LyrebirdPoint.Zero;
         }
 
-        public RevitObject(string family, string type, List<RevitParameter> parameters, List<Point> adaptivePoints)
+        public RevitObject(string family, string type, List<RevitParameter> parameters, List<LyrebirdPoint> adaptivePoints)
         {
             FamilyName = family;
             TypeName = type;
@@ -133,7 +136,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
     }
 
     [DataContract]
-    public class Point
+    public class LyrebirdPoint
     {
         [DataMember]
         public double X { get; set; }
@@ -144,23 +147,23 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         [DataMember]
         public double Z { get; set; }
 
-        public Point()
+        public LyrebirdPoint()
         {
             X = 0.0;
             Y = 0.0;
             Z = 0.0;
         }
 
-        public Point(double x, double y, double z)
+        public LyrebirdPoint(double x, double y, double z)
         {
             X = x;
             Y = y;
             Z = z;
         }
 
-        public static Point Zero
+        public static LyrebirdPoint Zero
         {
-            get { return new Point(0.0, 0.0, 0.0); }
+            get { return new LyrebirdPoint(0.0, 0.0, 0.0); }
         }
     }
 
@@ -168,25 +171,48 @@ namespace LMNA.Lyrebird.LyrebirdCommon
     public class LyrebirdCurve
     {
         [DataMember]
-        public List<Point> Points { get; set; }
+        public List<LyrebirdPoint> ControlPoints { get; set; }
 
         [DataMember]
         public int Degree { get; set; }
 
         [DataMember]
+        public List<double> Weights { get; set; }
+
+        [DataMember]
+        public List<double> Knots { get; set; }
+
+        [DataMember]
         public string CurveType { get; set; }
 
-        public LyrebirdCurve(List<Point> points, string curveType)
+        [DataMember]
+        public bool Periodic { get; set; }
+
+        public LyrebirdCurve()
         {
-            Points = points;
+
+        }
+
+        public LyrebirdCurve(List<LyrebirdPoint> points, string curveType)
+        {
+            ControlPoints = points;
             CurveType = curveType;
         }
 
-        public LyrebirdCurve(List<Point> points, string curveType, int degree)
+        public LyrebirdCurve(List<LyrebirdPoint> points, string curveType, int degree)
         {
-            Points = points;
+            ControlPoints = points;
             CurveType = curveType;
             Degree = degree;
+        }
+
+        public LyrebirdCurve(List<LyrebirdPoint> points, List<double> weights, List<double> knots, int degree, bool periodic)
+        {
+            ControlPoints = points;
+            Weights = weights;
+            Knots = knots;
+            Degree = degree;
+            Periodic = periodic;
         }
 
     }

@@ -26,6 +26,7 @@ namespace LMNA.Lyrebird.GH
         GHClient parent;
         LyrebirdChannel channel;
 
+        string category;
         string familyName;
         RevitObject familyObj;
         List<RevitObject> familyNames;
@@ -136,6 +137,7 @@ namespace LMNA.Lyrebird.GH
             DialogResult = true;
             parent.FamilyName = familyName;
             parent.TypeName = typeName;
+            parent.Category = category;
             RevitParameter rp = new RevitParameter();
             parent.InputParams = usedParameters;
             this.Close();
@@ -201,6 +203,7 @@ namespace LMNA.Lyrebird.GH
         {
             RevitObject fam = familyComboBox.SelectedItem as RevitObject;
             familyName = fam.FamilyName;
+            category = fam.Category;
             familyObj = fam;
 
             // get the type names

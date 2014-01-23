@@ -73,7 +73,7 @@ namespace LMNA.Lyrebird
                 if (disableButton)
                 {
                     bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                    lyrebirdButton = new PushButtonData("Lyrebird Server", "Lyrebird Server\nDisabled", typeof(RevitServerApp).Assembly.Location, "LMNts.Lyrebird.ServerToggle")
+                    lyrebirdButton = new PushButtonData("Lyrebird Server", "Lyrebird Server\nDisabled", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.ServerToggle")
                     {
                         LargeImage = bms,
                         ToolTip = "The Lyrebird Server is currently disabled in this session of Revit.  This is most likely because you have more than one session of Revit and the server can only run in one.",
@@ -84,7 +84,7 @@ namespace LMNA.Lyrebird
                     if (serverActive)
                     {
                         bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                        lyrebirdButton = new PushButtonData("Lyrebird Server", "Lyrebird\nServer On", typeof(RevitServerApp).Assembly.Location, "LMNts.Lyrebird.ServerToggle")
+                        lyrebirdButton = new PushButtonData("Lyrebird Server", "Lyrebird\nServer On", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.ServerToggle")
                         {
                             LargeImage = bms,
                             ToolTip = "The Lyrebird Server currently on and will accept requests for data and can create objects.  Push button to toggle the server off.",
@@ -93,7 +93,7 @@ namespace LMNA.Lyrebird
                     else
                     {
                         bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_Off.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                        lyrebirdButton = new PushButtonData("Lyrebird Server", "Lyrebird\nServer Off", typeof(RevitServerApp).Assembly.Location, "LMNts.Lyrebird.ServerToggle")
+                        lyrebirdButton = new PushButtonData("Lyrebird Server", "Lyrebird\nServer Off", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.ServerToggle")
                         {
                             LargeImage = bms,
                             ToolTip = "The Lyrebird Server is currently off and will not accept requests for data or create objects.  Push button to toggle the server on.",

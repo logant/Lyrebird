@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>LMNA.Lyrebird.LyrebirdCommon</RootNamespace>
-    <AssemblyName>LMNALyrebird.LyrebirdCommon</AssemblyName>
+    <AssemblyName>LMNA.Lyrebird.LyrebirdCommon</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
