@@ -1,4 +1,4 @@
-Lyrebird
+![Image](https://raw.github.com/logant/Lyrebird/blob/master/LyrebirdCommon/images/Lyrebird-Logo.png)
 ========
 ## Description ##
 Plugins for Audoesk Revit and McNeel's Rhino plugin Grasshopper that allow information to be exchanged primarily from Grasshopper to Revit.  Allows for native Revit elements to be instantiated in a Revit project from data created in Grasshopper.
