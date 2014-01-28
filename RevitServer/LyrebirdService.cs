@@ -519,108 +519,6 @@ namespace LMNA.Lyrebird
             return parameters;
         }
 
-        //public bool CreateObjects(List<RevitObject> objects)
-        //{
-        //    TaskContainer.Instance.EnqueueTask(uiApp =>
-        //        {
-        //            try
-        //            {
-        //                TaskDialog dlg = new TaskDialog("Warning");
-        //                dlg.MainInstruction = "Incoming Data";
-        //                dlg.MainContent = "Data is being sent to Revit from another application using Lyrebird." +
-        //                    "  Do you want to accept the incoming data and create new elements?";
-        //                dlg.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;
-
-        //                TaskDialogResult result = dlg.Show();
-        //                if (result == TaskDialogResult.Yes)
-        //                {
-        //                    // Go ahead and create some new elements
-        //                    //TaskDialog.Show("Temporary", "go ahead and create " + objects.Count.ToString() + " new elements");
-        //                    Document doc = uiApp.ActiveUIDocument.Document;
-
-        //                    // Find the FamilySymbol
-        //                    FamilySymbol symbol = null;
-        //                    FilteredElementCollector famCollector = new FilteredElementCollector(doc);
-        //                    famCollector.OfClass(typeof(Family));
-        //                    foreach (Family f in famCollector)
-        //                    {
-        //                        if (f.Name == objects[0].FamilyName)
-        //                        {
-        //                            foreach (FamilySymbol fs in f.Symbols)
-        //                            {
-        //                                if (fs.Name == objects[0].TypeName)
-        //                                {
-        //                                    symbol = fs;
-        //                                }
-        //                            }
-        //                        }
-        //                    }
-
-        //                    if (symbol != null)
-        //                    {
-        //                        using (Transaction t = new Transaction(doc, "Create Objects"))
-        //                        {
-        //                            t.Start();
-        //                            foreach (RevitObject ro in objects)
-        //                            {
-        //                                XYZ origin = new XYZ(ro.Origin.X, ro.Origin.Y, ro.Origin.Z);
-        //                                FamilyInstance fi = doc.Create.NewFamilyInstance(origin, symbol, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
-        //                                foreach (RevitParameter rp in ro.Parameters)
-        //                                {
-        //                                    try
-        //                                    {
-        //                                        Parameter p = fi.get_Parameter(rp.ParameterName);
-        //                                        switch (rp.StorageType)
-        //                                        {
-        //                                            case "Double":
-        //                                                p.Set(Convert.ToDouble(rp.Value));
-        //                                                break;
-        //                                            case "Integer":
-        //                                                p.Set(Convert.ToInt32(rp.Value));
-        //                                                break;
-        //                                            case "String":
-        //                                                p.Set(rp.Value);
-        //                                                break;
-        //                                            case "ElementId":
-        //                                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
-        //                                                break;
-        //                                            default:
-        //                                                p.Set(rp.Value);
-        //                                                break;
-        //                                        }
-        //                                    }
-        //                                    catch { }
-        //                                }
-        //                                // Rotate
-        //                                if (ro.Orientation != null)
-        //                                {
-        //                                    if (ro.Orientation.Z == 0)
-        //                                    {
-        //                                        Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
-        //                                        double angle = Math.Atan2(ro.Orientation.Y, ro.Orientation.X);
-        //                                        ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
-        //                                    }
-        //                                }
-        //                            }
-        //                            t.Commit();
-        //                        }
-        //                    }
-        //                    else
-        //                    {
-        //                        TaskDialog.Show("Error", "Could not find the desired family type");
-        //                    }
-        //                }
-        //            }
-        //            finally
-        //            {
-        //                Monitor.Pulse(_locker);
-        //            }
-        //        });
-        //    Monitor.Wait(_locker, WAIT_TIMEOUT);
-            
-        //    return true;
-        //}
-
         public bool CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId)
         {
 
@@ -633,7 +531,12 @@ namespace LMNA.Lyrebird
                     
                     TaskDialog dlg = new TaskDialog("Warning");
                     dlg.MainInstruction = "Incoming Data";
-
+                    RevitObject existingObj = incomingObjs[0];
+                    bool profileWarning = false;
+                    if ((existingObj.Category == "Walls" && existingObj.Curves.Count > 1) || existingObj.Category == "Floors" || existingObj.Category == "Roofs")
+                    {
+                        profileWarning = true;
+                    }
                     int option = 0;
                     if (existing == null || existing.Count == 0)
                     {
@@ -694,7 +597,7 @@ namespace LMNA.Lyrebird
                             // Modify
                             try
                             {
-                                ModifyObjects(incomingObjs, existing, uiApp.ActiveUIDocument.Document);
+                                ModifyObjects(incomingObjs, existing, uiApp.ActiveUIDocument.Document, uniqueId, profileWarning);
                             }
                             catch { }
                         }
@@ -717,7 +620,7 @@ namespace LMNA.Lyrebird
                             }
                             try
                             {
-                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document);
+                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document, uniqueId, profileWarning);
                                 CreateObjects(newObjects, uiApp.ActiveUIDocument.Document, uniqueId);
                             }
                             catch { }
@@ -741,7 +644,7 @@ namespace LMNA.Lyrebird
                             }
                             try
                             {
-                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document);
+                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document, uniqueId, profileWarning);
                                 DeleteExisting(uiApp.ActiveUIDocument.Document, removeObjects);
                             }
                             catch { }
@@ -782,7 +685,7 @@ namespace LMNA.Lyrebird
                             }
                             try
                             {
-                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document);
+                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document, uniqueId, profileWarning);
                             }
                             catch { }
                         }
@@ -902,12 +805,12 @@ namespace LMNA.Lyrebird
                                         TaskDialog.Show("Error", ex.Message);
                                     }
                                     // Rotate
-                                    if (ro.Orientation != null)
+                                    if (obj.Orientation != null)
                                     {
-                                        if (ro.Orientation.Z == 0)
+                                        if (obj.Orientation.Z == 0)
                                         {
                                             Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
-                                            double angle = Math.Atan2(ro.Orientation.Y, ro.Orientation.X);
+                                            double angle = Math.Atan2(obj.Orientation.Y, obj.Orientation.X);
                                             ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
                                         }
                                     }
@@ -1513,13 +1416,949 @@ namespace LMNA.Lyrebird
             #endregion
         }
 
-        private bool ModifyObjects(List<RevitObject> existingObjects, List<ElementId> existingElems, Document doc)
+        private void ModifyObjects(List<RevitObject> existingObjects, List<ElementId> existingElems, Document doc, Guid uniqueId, bool profileWarning)
         {
-            bool succeeded = true;
+            // Create new Revit objects.
+            List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
 
-            // TODO: Modify the existingElems according to data passed from existingObjects
+            // Determine what kind of object we're creating.
+            RevitObject ro = existingObjects[0];
 
-            return succeeded;
+            #region Normal Origin based FamilyInstance
+            // Modify origin based family instances
+            if (ro.Origin != null)
+            {
+                // Find the FamilySymbol
+                FamilySymbol symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
+
+                if (symbol != null)
+                {
+                     // Get the hosting ID from the family.
+                    Family fam = symbol.Family;
+                    Parameter hostParam = fam.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
+                    int hostBehavior = hostParam.AsInteger();
+
+                    FamilyInstance existingInstance = doc.GetElement(existingElems[0]) as FamilyInstance;
+                    
+                    using (Transaction t = new Transaction(doc, "Lyrebird Modify Objects"))
+                    {
+                        t.Start();
+                        try
+                        {
+                            Schema instanceSchema = null;
+                            try
+                            {
+                                instanceSchema = Schema.Lookup(instanceSchemaGUID);
+                            }
+                            catch { }
+                            if (instanceSchema == null)
+                            {
+                                SchemaBuilder sb = new SchemaBuilder(instanceSchemaGUID);
+                                sb.SetWriteAccessLevel(AccessLevel.Vendor);
+                                sb.SetReadAccessLevel(AccessLevel.Public);
+                                sb.SetVendorId("LMNA");
+
+                                // Create the field to store the data in the family
+                                FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
+                                guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+
+                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                instanceSchema = sb.Finish();
+                            }
+                                
+                            FamilyInstance fi = null;
+                            XYZ origin = XYZ.Zero;
+                            if (hostBehavior == 0)
+                            {
+                                for (int i = 0; i < existingObjects.Count; i++)
+                                {
+                                    RevitObject obj = existingObjects[i];
+                                    fi = doc.GetElement(existingElems[i]) as FamilyInstance;
+
+                                    // Change the family and symbol if necessary
+                                    if (fi.Symbol.Family.Name != symbol.Family.Name || fi.Symbol.Name != symbol.Name)
+                                    {
+                                        try
+                                        {
+                                            fi.Symbol = symbol;
+                                        }
+                                        catch { }
+                                    }
+
+                                    try
+                                    {
+                                        // Move family
+                                        origin = new XYZ(obj.Origin.X, obj.Origin.Y, obj.Origin.Z);
+                                        LocationPoint lp = fi.Location as LocationPoint;
+                                        XYZ oldLoc = lp.Point;
+                                        XYZ translation = origin.Subtract(oldLoc);
+                                        ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        TaskDialog.Show("Error", ex.Message);
+                                    }
+
+                                    // Rotate
+                                    if (obj.Orientation != null)
+                                    {
+                                        if (obj.Orientation.Z == 0)
+                                        {
+                                            Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
+                                            LocationPoint lp = fi.Location as LocationPoint;
+                                            double angle = Math.Atan2(obj.Orientation.Y, obj.Orientation.X) - lp.Rotation;
+                                            ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
+                                        }
+                                    }
+
+                                    // Assign the parameters
+                                    SetParameters(fi, obj.Parameters);
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 0; i < existingObjects.Count; i++)
+                                {
+                                    RevitObject obj = existingObjects[i];
+                                    fi = doc.GetElement(existingElems[i]) as FamilyInstance;
+
+                                    // Change the family and symbol if necessary
+                                    if (fi.Symbol.Family.Name != symbol.Family.Name || fi.Symbol.Name != symbol.Name)
+                                    {
+                                        try
+                                        {
+                                            fi.Symbol = symbol;
+                                        }
+                                        catch { }
+                                    }
+
+                                    origin = new XYZ(obj.Origin.X, obj.Origin.Y, obj.Origin.Z);
+
+                                    // Find the level
+                                    List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint>();
+                                    lbPoints.Add(obj.Origin);
+                                    Level lvl = GetLevel(lbPoints, doc);
+
+                                    // Get the host
+                                    if (hostBehavior == 5)
+                                    {
+                                        // Face based family.  Find the face and create the element
+                                        XYZ normVector = new XYZ(obj.Orientation.X, obj.Orientation.Y, obj.Orientation.Z);
+                                        XYZ faceVector;
+                                        if (obj.FaceOrientation != null)
+                                        {
+                                            faceVector = new XYZ(obj.FaceOrientation.X, obj.FaceOrientation.Y, obj.FaceOrientation.Z);
+                                        }
+                                        else
+                                        {
+                                            faceVector = XYZ.BasisZ;
+                                        }
+                                        Face face = FindFace(origin, normVector, doc);
+                                        if (face != null)
+                                        {
+                                            if (face.Reference.ElementId == fi.HostFace.ElementId)
+                                            {
+                                                //fi = doc.Create.NewFamilyInstance(face, origin, faceVector, symbol);
+                                                // Just move the host and update the parameters as needed.
+                                                LocationPoint lp = fi.Location as LocationPoint;
+                                                XYZ oldLoc = lp.Point;
+                                                XYZ translation = origin.Subtract(oldLoc);
+                                                ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+
+                                                SetParameters(fi, obj.Parameters);
+                                            }
+                                            else
+                                            {
+                                                FamilyInstance origInst = fi;
+                                                fi = doc.Create.NewFamilyInstance(face, origin, faceVector, symbol);
+
+                                                foreach (Parameter p in origInst.Parameters)
+                                                {
+                                                    try
+                                                    {
+                                                        Parameter newParam = fi.get_Parameter(p.GUID);
+                                                        if (newParam != null)
+                                                        {
+                                                            newParam.SetValueString(p.AsValueString());
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }
+                                                // Delete the original instance of the family
+                                                doc.Delete(origInst.Id);
+
+                                                // Assign the parameters
+                                                SetParameters(fi, obj.Parameters);
+
+                                                // Assign the GH InstanceGuid
+                                                AssignGuid(fi, uniqueId, instanceSchema);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // typical hosted family.  Can be wall, floor, roof or ceiling.
+                                        ElementId host = FindHost(origin, hostBehavior, doc);
+                                        if (host != null)
+                                        {
+                                            if (host.IntegerValue != fi.Host.Id.IntegerValue)
+                                            {
+                                                // We'll have to recreate the element
+                                                FamilyInstance origInst = fi;
+                                                fi = doc.Create.NewFamilyInstance(origin, symbol, doc.GetElement(host), lvl, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                                foreach (Parameter p in origInst.Parameters)
+                                                {
+                                                    try
+                                                    {
+                                                        Parameter newParam = fi.get_Parameter(p.Definition.Name);
+                                                        if (newParam != null)
+                                                        {
+                                                            switch (newParam.StorageType)
+                                                            {
+                                                                case StorageType.Double:
+                                                                    newParam.Set(p.AsDouble());
+                                                                    break;
+                                                                case StorageType.ElementId:
+                                                                    newParam.Set(p.AsElementId());
+                                                                    break;
+                                                                case StorageType.Integer:
+                                                                    newParam.Set(p.AsInteger());
+                                                                    break;
+                                                                case StorageType.String:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                                default:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                            }
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }
+                                                // Delete the original instance of the family
+                                                doc.Delete(origInst.Id);
+                                                    
+                                                // Assign the parameters
+                                                SetParameters(fi, obj.Parameters);
+
+                                                // Assign the GH InstanceGuid
+                                                AssignGuid(fi, uniqueId, instanceSchema);
+                                            }
+
+                                            else
+                                            {
+                                                // Just move the host and update the parameters as needed.
+                                                LocationPoint lp = fi.Location as LocationPoint;
+                                                XYZ oldLoc = lp.Point;
+                                                XYZ translation = origin.Subtract(oldLoc);
+                                                ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+
+                                                SetParameters(fi, obj.Parameters);
+                                            }
+                                        }
+                                    }
+
+                                    // Assign the parameters
+                                    SetParameters(fi, obj.Parameters);
+                                }
+                                // delete the host finder
+                                ElementId hostFinderFamily = hostFinder.Symbol.Family.Id;
+                                doc.Delete(hostFinder.Id);
+                                doc.Delete(hostFinderFamily);
+                                hostFinder = null;
+                            }
+                        }
+                        catch { }
+
+                        t.Commit();
+                    }
+                }
+            }
+
+            #endregion
+
+
+            #region Adaptive Components
+            FamilyInstance adaptInst;
+            try
+            {
+                adaptInst = doc.GetElement(existingElems[0]) as FamilyInstance;
+            }
+            catch
+            {
+                adaptInst = null;
+            }
+            if (adaptInst != null && AdaptiveComponentInstanceUtils.IsAdaptiveComponentInstance(adaptInst))
+            {
+                // Find the FamilySymbol
+                FamilySymbol symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
+
+                if (symbol != null)
+                {
+                    using (Transaction t = new Transaction(doc, "Lyrebird Modify Objects"))
+                    {
+                        t.Start();
+                        try
+                        {
+                            // Create the Schema for the instances to store the GH Component InstanceGUID and the path
+                            Schema instanceSchema = null;
+                            try
+                            {
+                                instanceSchema = Schema.Lookup(instanceSchemaGUID);
+                            }
+                            catch { }
+                            if (instanceSchema == null)
+                            {
+                                SchemaBuilder sb = new SchemaBuilder(instanceSchemaGUID);
+                                sb.SetWriteAccessLevel(AccessLevel.Vendor);
+                                sb.SetReadAccessLevel(AccessLevel.Public);
+                                sb.SetVendorId("LMNA");
+
+                                // Create the field to store the data in the family
+                                FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
+                                guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+
+                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                instanceSchema = sb.Finish();
+                            }
+                            FamilyInstance fi = null;
+                            
+                            try
+                            {
+                                for (int i = 0; i < existingElems.Count; i++)
+                                {
+                                    RevitObject obj = existingObjects[i];
+                                    
+                                    fi = doc.GetElement(existingElems[i]) as FamilyInstance;
+                                    
+                                    // Change the family and symbol if necessary
+                                    if (fi.Symbol.Family.Name != symbol.Family.Name || fi.Symbol.Name != symbol.Name)
+                                    {
+                                        try
+                                        {
+                                            fi.Symbol = symbol;
+                                        }
+                                        catch { }
+                                    }
+
+                                    IList<ElementId> placePointIds = new List<ElementId>();
+                                    placePointIds = AdaptiveComponentInstanceUtils.GetInstancePlacementPointElementRefIds(fi);
+
+                                    for (int ptNum = 0; ptNum < obj.AdaptivePoints.Count; ptNum++)
+                                    {
+                                        try
+                                        {
+                                            ReferencePoint rp = doc.GetElement(placePointIds[ptNum]) as ReferencePoint;
+                                            XYZ pt = new XYZ(obj.AdaptivePoints[ptNum].X, obj.AdaptivePoints[ptNum].Y, obj.AdaptivePoints[ptNum].Z);
+                                            XYZ vector = pt.Subtract(rp.Position);
+                                            ElementTransformUtils.MoveElement(doc, rp.Id, vector);
+                                        }
+                                        catch { }
+                                    }
+
+                                    // Assign the parameters
+                                    SetParameters(fi, obj.Parameters);
+                                }
+
+                            }
+                            catch { }
+                        }
+                        catch { }
+                        t.Commit();
+                    }
+                }
+
+            }
+
+            #endregion
+
+
+            #region Curve based components
+            if (ro.Curves != null && ro.Curves.Count > 0)
+            {
+
+                // Find the FamilySymbol
+                FamilySymbol symbol = null;
+                WallType wallType = null;
+                FloorType floorType = null;
+                RoofType roofType = null;
+                bool typeFound = false;
+
+                FilteredElementCollector famCollector = new FilteredElementCollector(doc);
+
+                if (ro.Category == "Walls")
+                {
+                    famCollector.OfClass(typeof(WallType));
+                    foreach (WallType wt in famCollector)
+                    {
+                        if (wt.Name == ro.TypeName)
+                        {
+                            wallType = wt;
+                            typeFound = true;
+                            break;
+                        }
+                    }
+                }
+                else if (ro.Category == "Floors")
+                {
+                    famCollector.OfClass(typeof(FloorType));
+                    foreach (FloorType ft in famCollector)
+                    {
+                        if (ft.Name == ro.TypeName)
+                        {
+                            floorType = ft;
+                            typeFound = true;
+                            break;
+                        }
+                    }
+                }
+                else if (ro.Category == "Roofs")
+                {
+                    famCollector.OfClass(typeof(RoofType));
+                    foreach (RoofType rt in famCollector)
+                    {
+                        if (rt.Name == ro.TypeName)
+                        {
+                            roofType = rt;
+                            typeFound = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
+                    if (symbol != null)
+                        typeFound = true;
+                }
+
+
+
+                if (typeFound)
+                {
+                    using (Transaction t = new Transaction(doc, "Lyrebird Modify Objects"))
+                    {
+
+                        t.Start();
+                        try
+                        {
+                            // Create the Schema for the instances to store the GH Component InstanceGUID and the path
+                            Schema instanceSchema = null;
+                            try
+                            {
+                                instanceSchema = Schema.Lookup(instanceSchemaGUID);
+                            }
+                            catch { }
+                            if (instanceSchema == null)
+                            {
+                                SchemaBuilder sb = new SchemaBuilder(instanceSchemaGUID);
+                                sb.SetWriteAccessLevel(AccessLevel.Vendor);
+                                sb.SetReadAccessLevel(AccessLevel.Public);
+                                sb.SetVendorId("LMNA");
+
+                                // Create the field to store the data in the family
+                                FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
+                                guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+
+                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                instanceSchema = sb.Finish();
+                            }
+                            FamilyInstance fi = null;
+                            try
+                            {
+
+                                for (int i = 0; i < existingObjects.Count; i++)
+                                {
+                                    RevitObject obj = existingObjects[i];
+                                    if (obj.Category != "Walls")
+                                    {
+                                        fi = doc.GetElement(existingElems[i]) as FamilyInstance;
+                                        
+                                        // Change the family and symbol if necessary
+                                        if (fi.Symbol.Family.Name != symbol.Family.Name || fi.Symbol.Name != symbol.Name)
+                                        {
+                                            try
+                                            {
+                                                fi.Symbol = symbol;
+                                            }
+                                            catch { }
+                                        }
+                                    }
+                                    #region single line based family
+                                    if (obj.Curves.Count == 1)
+                                    {
+
+                                        LyrebirdCurve lbc = obj.Curves[0];
+                                        List<LyrebirdPoint> curvePoints = lbc.ControlPoints.OrderBy(p => p.Z).ToList();
+                                        // linear
+                                        // can be a wall or line based family.
+                                        if (obj.Category == "Walls")
+                                        {
+                                            // draw a wall
+                                            Curve crv = null;
+                                            if (lbc.CurveType == "Line")
+                                            {
+                                                XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                crv = Line.CreateBound(pt1, pt2);
+                                            }
+                                            else if (lbc.CurveType == "Arc")
+                                            {
+                                                XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                crv = Arc.Create(pt1, pt3, pt2);
+                                            }
+
+                                            if (crv != null)
+                                            {
+
+                                                // Find the level
+                                                Level lvl = GetLevel(lbc.ControlPoints, doc);
+
+                                                double offset = 0;
+                                                if (curvePoints[0].Z != lvl.Elevation)
+                                                {
+                                                    offset = lvl.Elevation - curvePoints[0].Z;
+                                                }
+
+                                                // Create the wall
+                                                Wall w = null;
+                                                try
+                                                {
+                                                    w = doc.GetElement(existingElems[i]) as Wall;
+                                                    LocationCurve lc = w.Location as LocationCurve;
+                                                    lc.Curve = crv;
+
+                                                    // Change the family and symbol if necessary
+                                                    if (w.WallType.Name != wallType.Name)
+                                                    {
+                                                        try
+                                                        {
+                                                            w.WallType = wallType;
+                                                        }
+                                                        catch { }
+                                                    }
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    TaskDialog.Show("ERROR", ex.Message);
+                                                }
+                                                
+
+                                                // Assign the parameters
+                                                SetParameters(w, obj.Parameters);
+                                            }
+                                        }
+                                        // See if it's a structural column
+                                        else if (obj.Category == "Structural Columns")
+                                        {
+                                            if (symbol != null && lbc.CurveType == "Line")
+                                            {
+                                                Curve crv = null;
+                                                XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                crv = Line.CreateBound(origin, pt2);
+
+                                                // Find the level
+                                                Level lvl = GetLevel(lbc.ControlPoints, doc);
+
+                                                // Create the column
+                                                //fi = doc.Create.NewFamilyInstance(origin, symbol, lvl, Autodesk.Revit.DB.Structure.StructuralType.Column);
+
+                                                // Change it to a slanted column
+                                                Parameter slantParam = fi.get_Parameter(BuiltInParameter.SLANTED_COLUMN_TYPE_PARAM);
+
+                                                // SlantedOrVerticalColumnType has 3 options, CT_Vertical (0), CT_Angle (1), or CT_EndPoint (2)
+                                                // CT_EndPoint is what we want for a line based column.
+                                                slantParam.Set(2);
+
+                                                // Set the location curve of the column to the line
+                                                LocationCurve lc = fi.Location as LocationCurve;
+                                                if (lc != null)
+                                                {
+                                                    lc.Curve = crv;
+                                                }
+
+                                                // Assign the parameters
+                                                SetParameters(fi, obj.Parameters);
+                                            }
+                                        }
+
+                                        // Otherwise create a family it using the line
+                                        else
+                                        {
+                                            if (symbol != null)
+                                            {
+                                                Curve crv = null;
+
+                                                if (lbc.CurveType == "Line")
+                                                {
+                                                    XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                    crv = Line.CreateBound(origin, pt2);
+                                                }
+                                                else if (lbc.CurveType == "Arc")
+                                                {
+                                                    XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                    XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                    crv = Arc.Create(pt1, pt3, pt2);
+                                                }
+
+                                                try
+                                                {
+                                                    LocationCurve lc = fi.Location as LocationCurve;
+                                                    lc.Curve = crv;
+                                                }
+                                                catch { }
+                                                // Assign the parameters
+                                                SetParameters(fi, obj.Parameters);
+                                            }
+                                        }
+                                    }
+                                    #endregion
+
+                                    #region Closed Curve Family
+                                    else
+                                    {
+                                        bool replace = false;
+                                        if (profileWarning)
+                                        {
+                                            TaskDialog warningDlg = new TaskDialog("Warning");
+                                            warningDlg.MainInstruction = "Profile based Elements cannot be updated";
+                                            warningDlg.MainContent = "Elements that require updates to a profile sketch cannot be updated and must be deleted and replaced with new elements." +
+                                                "  Doing so will cause the loss of any elements hosted to the original instance. How would you like to proceed";
+                                            warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Replace the existing elements, understanding hosted elements will be lost");
+                                            warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Only updated parameter information and not profile or location information");
+                                            warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
+
+                                            TaskDialogResult result = warningDlg.Show();
+                                            if (result == TaskDialogResult.CommandLink1)
+                                            {
+                                                replace = true;
+                                            }
+                                        }
+                                        // A list of curves.  These should equate a closed planar curve from GH.
+                                        // Determine category and create based on that.
+                                        if (obj.Category == "Walls")
+                                        {
+                                            // Create line based wall
+                                            // Find the level
+                                            Level lvl = null;
+                                            double offset = 0;
+                                            List<LyrebirdPoint> allPoints = new List<LyrebirdPoint>();
+                                            foreach (LyrebirdCurve lc in obj.Curves)
+                                            {
+                                                foreach (LyrebirdPoint lp in lc.ControlPoints)
+                                                {
+                                                    allPoints.Add(lp);
+                                                }
+                                            }
+                                            allPoints.Sort((x, y) => x.Z.CompareTo(y.Z));
+
+                                            lvl = GetLevel(allPoints, doc);
+
+                                            if (allPoints[0].Z != lvl.Elevation)
+                                            {
+                                                offset = allPoints[0].Z - lvl.Elevation;
+                                            }
+
+                                            // Generate the curvearray from the incoming curves
+                                            List<Curve> crvArray = new List<Curve>();
+                                            try
+                                            {
+                                                for (int j = 0; j < obj.Curves.Count; j++)
+                                                {
+                                                    LyrebirdCurve lbc = obj.Curves[j];
+                                                    if (lbc.CurveType == "Arc")
+                                                    {
+                                                        XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                        XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                        XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                        Arc arc = Arc.Create(pt1, pt3, pt2);
+                                                        crvArray.Add(arc);
+                                                    }
+                                                    else if (lbc.CurveType == "Line")
+                                                    {
+                                                        XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                        XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                        Line line = Line.CreateBound(pt1, pt2);
+                                                        crvArray.Add(line);
+                                                    }
+                                                    else if (lbc.CurveType == "Spline")
+                                                    {
+                                                        List<XYZ> controlPoints = new List<XYZ>();
+                                                        List<double> weights = lbc.Weights;
+                                                        List<double> knots = lbc.Knots;
+
+                                                        foreach (LyrebirdPoint lp in lbc.ControlPoints)
+                                                        {
+                                                            XYZ pt = new XYZ(lp.X, lp.Y, lp.Z);
+                                                            controlPoints.Add(pt);
+                                                        }
+                                                        NurbSpline spline;
+                                                        if (lbc.Degree < 3)
+                                                        {
+                                                            spline = NurbSpline.Create(controlPoints, weights);
+                                                        }
+                                                        else
+                                                        {
+                                                            spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
+                                                        }
+                                                        crvArray.Add(spline);
+                                                    }
+                                                }
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                TaskDialog.Show("ERROR", ex.Message);
+                                            }
+
+                                            // Create the floor
+                                            Wall w = null;
+                                            if (replace)
+                                            {
+                                                Wall origWall = doc.GetElement(existingElems[i]) as Wall;
+
+                                                w = Wall.Create(doc, crvArray, wallType.Id, lvl.Id, false);
+
+                                                foreach (Parameter p in origWall.Parameters)
+                                                {
+                                                    try
+                                                    {
+                                                        Parameter newParam = w.get_Parameter(p.Definition.Name);
+                                                        if (newParam != null)
+                                                        {
+                                                            switch (newParam.StorageType)
+                                                            {
+                                                                case StorageType.Double:
+                                                                    newParam.Set(p.AsDouble());
+                                                                    break;
+                                                                case StorageType.ElementId:
+                                                                    newParam.Set(p.AsElementId());
+                                                                    break;
+                                                                case StorageType.Integer:
+                                                                    newParam.Set(p.AsInteger());
+                                                                    break;
+                                                                case StorageType.String:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                                default:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                            }
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                if (offset != 0)
+                                                {
+                                                    Parameter p = w.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
+                                                    p.Set(offset);
+                                                }
+                                                doc.Delete(origWall.Id);
+                                                // Assign the GH InstanceGuid
+                                                AssignGuid(w, uniqueId, instanceSchema);
+                                            }
+                                            else
+                                            {
+                                                w = doc.GetElement(existingElems[i]) as Wall;
+
+                                                // Change the family and symbol if necessary
+                                                if (w.WallType.Name != wallType.Name)
+                                                {
+                                                    try
+                                                    {
+                                                        w.WallType = wallType;
+                                                    }
+                                                    catch { }
+                                                }
+                                            }
+
+                                            // Assign the parameters
+                                            SetParameters(w, obj.Parameters);
+                                        }
+                                        else if (obj.Category == "Floors")
+                                        {
+                                            // Create a profile based floor
+                                            // Find the level
+                                            Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
+
+                                            double offset = 0;
+                                            if (obj.Curves[0].ControlPoints[0].Z != lvl.Elevation)
+                                            {
+                                                offset = obj.Curves[0].ControlPoints[0].Z - lvl.Elevation;
+                                            }
+
+                                            // Generate the curvearray from the incoming curves
+                                            CurveArray crvArray = GetCurveArray(obj.Curves);
+
+                                            // Create the floor
+                                            Floor flr = null;
+                                            if (replace)
+                                            {
+                                                Floor origFloor = doc.GetElement(existingElems[i]) as Floor;
+                                                flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+
+                                                foreach (Parameter p in origFloor.Parameters)
+                                                {
+                                                    try
+                                                    {
+                                                        Parameter newParam = flr.get_Parameter(p.Definition.Name);
+                                                        if (newParam != null)
+                                                        {
+                                                            switch (newParam.StorageType)
+                                                            {
+                                                                case StorageType.Double:
+                                                                    newParam.Set(p.AsDouble());
+                                                                    break;
+                                                                case StorageType.ElementId:
+                                                                    newParam.Set(p.AsElementId());
+                                                                    break;
+                                                                case StorageType.Integer:
+                                                                    newParam.Set(p.AsInteger());
+                                                                    break;
+                                                                case StorageType.String:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                                default:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                            }
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                if (offset != 0)
+                                                {
+                                                    Parameter p = flr.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
+                                                    p.Set(offset);
+                                                }
+                                                doc.Delete(origFloor.Id);
+                                                // Assign the GH InstanceGuid
+                                                AssignGuid(flr, uniqueId, instanceSchema);
+                                            }
+                                            else
+                                            {
+                                                flr = doc.GetElement(existingElems[i]) as Floor;
+
+                                                // Change the family and symbol if necessary
+                                                if (flr.FloorType.Name != floorType.Name)
+                                                {
+                                                    try
+                                                    {
+                                                        flr.FloorType = floorType;
+                                                    }
+                                                    catch { }
+                                                }
+                                            }
+
+                                            // Assign the parameters
+                                            SetParameters(flr, obj.Parameters);
+                                        }
+                                        else if (obj.Category == "Roofs")
+                                        {
+                                            // Create a RoofExtrusion
+                                            // Find the level
+                                            Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
+
+                                            double offset = 0;
+                                            if (obj.Curves[0].ControlPoints[0].Z != lvl.Elevation)
+                                            {
+                                                offset = obj.Curves[0].ControlPoints[0].Z - lvl.Elevation;
+                                            }
+
+                                            // Generate the curvearray from the incoming curves
+                                            CurveArray crvArray = GetCurveArray(obj.Curves);
+
+                                            // Create the roof
+                                            FootPrintRoof roof = null;
+                                            ModelCurveArray roofProfile = new ModelCurveArray();
+                                            if (replace)
+                                            {
+                                                Floor origRoof = doc.GetElement(existingElems[i]) as Floor;
+                                                roof = doc.Create.NewFootPrintRoof(crvArray, lvl, roofType, out roofProfile);
+
+                                                foreach (Parameter p in origRoof.Parameters)
+                                                {
+                                                    try
+                                                    {
+                                                        Parameter newParam = roof.get_Parameter(p.Definition.Name);
+                                                        if (newParam != null)
+                                                        {
+                                                            switch (newParam.StorageType)
+                                                            {
+                                                                case StorageType.Double:
+                                                                    newParam.Set(p.AsDouble());
+                                                                    break;
+                                                                case StorageType.ElementId:
+                                                                    newParam.Set(p.AsElementId());
+                                                                    break;
+                                                                case StorageType.Integer:
+                                                                    newParam.Set(p.AsInteger());
+                                                                    break;
+                                                                case StorageType.String:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                                default:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                            }
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                if (offset != 0)
+                                                {
+                                                    Parameter p = roof.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM);
+                                                    p.Set(offset);
+                                                }
+                                                doc.Delete(origRoof.Id);
+                                                // Assign the GH InstanceGuid
+                                                AssignGuid(roof, uniqueId, instanceSchema);
+                                            }
+                                            else
+                                            {
+                                                roof = doc.GetElement(existingElems[i]) as FootPrintRoof;
+
+                                                // Change the family and symbol if necessary
+                                                if (roof.RoofType.Name != roofType.Name)
+                                                {
+                                                    try
+                                                    {
+                                                        roof.RoofType = roofType;
+                                                    }
+                                                    catch { }
+                                                }
+                                            }
+
+                                            // Assign the parameters
+                                            SetParameters(roof, obj.Parameters);
+
+                                        }
+                                    }
+                                    #endregion
+                                }
+                            }
+                            catch
+                            {
+
+                            }
+                        }
+                        catch { }
+                        t.Commit();
+                    }
+                }
+
+
+            }
+            #endregion
+
+            //return succeeded;
         }
 
         private List<ElementId> FindExisting(Document doc, Guid uniqueId, string category)
