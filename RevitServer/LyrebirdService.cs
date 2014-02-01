@@ -1776,7 +1776,6 @@ namespace LMNA.Lyrebird
             #region Curve based components
             if (ro.Curves != null && ro.Curves.Count > 0)
             {
-
                 // Find the FamilySymbol
                 FamilySymbol symbol = null;
                 WallType wallType = null;
@@ -1838,7 +1837,6 @@ namespace LMNA.Lyrebird
                 {
                     using (Transaction t = new Transaction(doc, "Lyrebird Modify Objects"))
                     {
-
                         t.Start();
                         try
                         {
@@ -1866,11 +1864,10 @@ namespace LMNA.Lyrebird
                             FamilyInstance fi = null;
                             try
                             {
-
                                 for (int i = 0; i < existingObjects.Count; i++)
                                 {
                                     RevitObject obj = existingObjects[i];
-                                    if (obj.Category != "Walls")
+                                    if (obj.Category != "Walls" && obj.Category != "Floors" && obj.Category != "Roofs")
                                     {
                                         fi = doc.GetElement(existingElems[i]) as FamilyInstance;
                                         
@@ -2026,10 +2023,11 @@ namespace LMNA.Lyrebird
                                         if (profileWarning)
                                         {
                                             TaskDialog warningDlg = new TaskDialog("Warning");
-                                            warningDlg.MainInstruction = "Profile based Elements cannot be updated";
-                                            warningDlg.MainContent = "Elements that require updates to a profile sketch cannot be updated and must be deleted and replaced with new elements." +
+                                            warningDlg.MainInstruction = "Profile based Elements warning";
+                                            warningDlg.MainContent = "Elements that require updates to a profile sketch may not be updated if the number of curves in the sketch differs from the incoming curves." +
+                                                "  In such cases the element and will be deleted and replaced with new elements." +
                                                 "  Doing so will cause the loss of any elements hosted to the original instance. How would you like to proceed";
-                                            warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Replace the existing elements, understanding hosted elements will be lost");
+                                            warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Replace the existing elements, understanding hosted elements may be lost");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Only updated parameter information and not profile or location information");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
 
@@ -2115,11 +2113,34 @@ namespace LMNA.Lyrebird
                                                 TaskDialog.Show("ERROR", ex.Message);
                                             }
 
-                                            // Create the floor
+                                            // Create the wall
                                             Wall w = null;
                                             if (replace)
                                             {
                                                 Wall origWall = doc.GetElement(existingElems[i]) as Wall;
+
+                                                // Find the model curves for the original wall
+                                                ICollection<ElementId> ids;
+                                                using (SubTransaction st = new SubTransaction(doc))
+                                                {
+                                                    st.Start();
+                                                    ids = doc.Delete(origWall);
+                                                    st.RollBack();
+                                                }
+
+                                                List<ModelCurve> mLines = new List<ModelCurve>();
+                                                foreach (ElementId id in ids)
+                                                {
+                                                    Element e = doc.GetElement(id);
+                                                    if (e is ModelCurve)
+                                                    {
+                                                        mLines.Add(e as ModelCurve);
+                                                    }
+                                                }
+
+                                                // Walls don't appear to be updatable like floors and roofs
+                                                //if (mLines.Count != crvArray.Count)
+                                                //{
 
                                                 w = Wall.Create(doc, crvArray, wallType.Id, lvl.Id, false);
 
@@ -2161,8 +2182,80 @@ namespace LMNA.Lyrebird
                                                 doc.Delete(origWall.Id);
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(w, uniqueId, instanceSchema);
+
+                                                #region ModifyWallProfile
+                                                //    }
+                                            //    else
+                                            //    {
+                                            //        // Attempt to recreate the profile
+                                            //        try
+                                            //        {
+                                            //            TaskDialog.Show("Curve Counts", "Incoming: " + crvArray.Count.ToString() + "\nExisting: " + mLines.Count.ToString());
+                                            //            int crvCount = 0;
+                                            //            foreach (ModelCurve l in mLines)
+                                            //            {
+                                            //                LocationCurve lc = l.Location as LocationCurve;
+                                            //                lc.Curve = crvArray[crvCount];
+                                            //                crvCount++;
+                                            //            }
+                                            //            TaskDialog.Show("Edit", "I'm going to try");
+                                            //            // Set the parameters
+                                            //            SetParameters(origWall, obj.Parameters);
+                                            //        }
+                                            //        catch (Exception ex)
+                                            //        {
+                                            //            TaskDialog.Show("Error", ex.Message);
+
+                                            //            w = Wall.Create(doc, crvArray, wallType.Id, lvl.Id, false);
+
+                                            //            foreach (Parameter p in origWall.Parameters)
+                                            //            {
+                                            //                try
+                                            //                {
+                                            //                    Parameter newParam = w.get_Parameter(p.Definition.Name);
+                                            //                    if (newParam != null)
+                                            //                    {
+                                            //                        switch (newParam.StorageType)
+                                            //                        {
+                                            //                            case StorageType.Double:
+                                            //                                newParam.Set(p.AsDouble());
+                                            //                                break;
+                                            //                            case StorageType.ElementId:
+                                            //                                newParam.Set(p.AsElementId());
+                                            //                                break;
+                                            //                            case StorageType.Integer:
+                                            //                                newParam.Set(p.AsInteger());
+                                            //                                break;
+                                            //                            case StorageType.String:
+                                            //                                newParam.Set(p.AsString());
+                                            //                                break;
+                                            //                            default:
+                                            //                                newParam.Set(p.AsString());
+                                            //                                break;
+                                            //                        }
+                                            //                    }
+                                            //                }
+                                            //                catch { }
+                                            //            }
+
+                                            //            if (offset != 0)
+                                            //            {
+                                            //                Parameter p = w.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
+                                            //                p.Set(offset);
+                                            //            }
+                                            //            doc.Delete(origWall.Id);
+
+                                            //            // Set the incoming parameters
+                                            //            SetParameters(w, obj.Parameters);
+
+                                            //            // Assign the GH InstanceGuid
+                                            //            AssignGuid(w, uniqueId, instanceSchema);
+                                            //        }
+                                                //    }
+                                                #endregion
+
                                             }
-                                            else
+                                            else  // Just update the parameters and don't change the wall
                                             {
                                                 w = doc.GetElement(existingElems[i]) as Wall;
 
@@ -2199,49 +2292,145 @@ namespace LMNA.Lyrebird
                                             Floor flr = null;
                                             if (replace)
                                             {
-                                                Floor origFloor = doc.GetElement(existingElems[i]) as Floor;
-                                                flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
 
-                                                foreach (Parameter p in origFloor.Parameters)
+
+                                                Floor origFloor = doc.GetElement(existingElems[i]) as Floor;
+
+                                                // Find the model curves for the original wall
+                                                ICollection<ElementId> ids;
+                                                using (SubTransaction st = new SubTransaction(doc))
+                                                {
+                                                    st.Start();
+                                                    
+                                                    ids = doc.Delete(origFloor.Id);
+                                                    st.RollBack();
+                                                }
+
+                                                // Get only the modelcurves
+                                                List<ModelCurve> mLines = new List<ModelCurve>();
+                                                foreach (ElementId id in ids)
+                                                {
+                                                    Element e = doc.GetElement(id);
+                                                    if (e is ModelCurve)
+                                                    {
+                                                        mLines.Add(e as ModelCurve);
+                                                    }
+                                                }
+
+                                                // Floors have an extra modelcurve for the SpanDirection.  Remove the last Item to get rid of it.
+                                                mLines.RemoveAt(mLines.Count - 1);
+                                                
+                                                if (mLines.Count != crvArray.Size) // The sketch is different from the incoming curves so floor is recreated
+                                                {
+                                                    TaskDialog.Show("Test", "MLines: " + mLines.Count.ToString() + "\ncrvArray: " + crvArray.Size.ToString());
+                                                    flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+
+                                                    foreach (Parameter p in origFloor.Parameters)
+                                                    {
+                                                        try
+                                                        {
+                                                            Parameter newParam = flr.get_Parameter(p.Definition.Name);
+                                                            if (newParam != null)
+                                                            {
+                                                                switch (newParam.StorageType)
+                                                                {
+                                                                    case StorageType.Double:
+                                                                        newParam.Set(p.AsDouble());
+                                                                        break;
+                                                                    case StorageType.ElementId:
+                                                                        newParam.Set(p.AsElementId());
+                                                                        break;
+                                                                    case StorageType.Integer:
+                                                                        newParam.Set(p.AsInteger());
+                                                                        break;
+                                                                    case StorageType.String:
+                                                                        newParam.Set(p.AsString());
+                                                                        break;
+                                                                    default:
+                                                                        newParam.Set(p.AsString());
+                                                                        break;
+                                                                }
+                                                            }
+                                                        }
+                                                        catch { }
+                                                    }
+
+                                                    if (offset != 0)
+                                                    {
+                                                        Parameter p = flr.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
+                                                        p.Set(offset);
+                                                    }
+                                                    doc.Delete(origFloor.Id);
+                                                    // Assign the GH InstanceGuid
+                                                    AssignGuid(flr, uniqueId, instanceSchema);
+                                                }
+                                                else // The curves coming in should match the floor sketch.  Let's modify the floor's locationcurves to edit it's location/shape
                                                 {
                                                     try
                                                     {
-                                                        Parameter newParam = flr.get_Parameter(p.Definition.Name);
-                                                        if (newParam != null)
+                                                        int crvCount = 0;
+                                                        foreach (ModelCurve l in mLines)
                                                         {
-                                                            switch (newParam.StorageType)
-                                                            {
-                                                                case StorageType.Double:
-                                                                    newParam.Set(p.AsDouble());
-                                                                    break;
-                                                                case StorageType.ElementId:
-                                                                    newParam.Set(p.AsElementId());
-                                                                    break;
-                                                                case StorageType.Integer:
-                                                                    newParam.Set(p.AsInteger());
-                                                                    break;
-                                                                case StorageType.String:
-                                                                    newParam.Set(p.AsString());
-                                                                    break;
-                                                                default:
-                                                                    newParam.Set(p.AsString());
-                                                                    break;
-                                                            }
+                                                            LocationCurve lc = l.Location as LocationCurve;
+                                                            lc.Curve = crvArray.get_Item(crvCount);
+                                                            crvCount++;
                                                         }
-                                                    }
-                                                    catch { }
-                                                }
 
-                                                if (offset != 0)
-                                                {
-                                                    Parameter p = flr.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
-                                                    p.Set(offset);
+                                                        // Set the incoming parameters
+                                                        SetParameters(origFloor, obj.Parameters);
+                                                    }
+                                                    catch (Exception ex) // There was an error in trying to recreate it.  Just delete the original and recreate the thing.
+                                                    {
+                                                        TaskDialog.Show("Error", ex.Message);
+                                                        flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+
+                                                        // Assign the parameters in the new floor to match the original floor object.
+                                                        foreach (Parameter p in origFloor.Parameters)
+                                                        {
+                                                            try
+                                                            {
+                                                                Parameter newParam = flr.get_Parameter(p.Definition.Name);
+                                                                if (newParam != null)
+                                                                {
+                                                                    switch (newParam.StorageType)
+                                                                    {
+                                                                        case StorageType.Double:
+                                                                            newParam.Set(p.AsDouble());
+                                                                            break;
+                                                                        case StorageType.ElementId:
+                                                                            newParam.Set(p.AsElementId());
+                                                                            break;
+                                                                        case StorageType.Integer:
+                                                                            newParam.Set(p.AsInteger());
+                                                                            break;
+                                                                        case StorageType.String:
+                                                                            newParam.Set(p.AsString());
+                                                                            break;
+                                                                        default:
+                                                                            newParam.Set(p.AsString());
+                                                                            break;
+                                                                    }
+                                                                }
+                                                            }
+                                                            catch { }
+                                                        }
+
+                                                        if (offset != 0)
+                                                        {
+                                                            Parameter p = flr.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
+                                                            p.Set(offset);
+                                                        }
+
+                                                        doc.Delete(origFloor.Id);
+
+                                                        // Set the incoming parameters
+                                                        SetParameters(flr, obj.Parameters);
+                                                        // Assign the GH InstanceGuid
+                                                        AssignGuid(flr, uniqueId, instanceSchema);
+                                                    }
                                                 }
-                                                doc.Delete(origFloor.Id);
-                                                // Assign the GH InstanceGuid
-                                                AssignGuid(flr, uniqueId, instanceSchema);
                                             }
-                                            else
+                                            else // Just modify the floor and don't risk replacing it.
                                             {
                                                 flr = doc.GetElement(existingElems[i]) as Floor;
 
@@ -2277,51 +2466,144 @@ namespace LMNA.Lyrebird
                                             // Create the roof
                                             FootPrintRoof roof = null;
                                             ModelCurveArray roofProfile = new ModelCurveArray();
-                                            if (replace)
-                                            {
-                                                Floor origRoof = doc.GetElement(existingElems[i]) as Floor;
-                                                roof = doc.Create.NewFootPrintRoof(crvArray, lvl, roofType, out roofProfile);
 
-                                                foreach (Parameter p in origRoof.Parameters)
+                                            if (replace)  // Try to modify or create a new roof.
+                                            {
+                                                FootPrintRoof origRoof = doc.GetElement(existingElems[i]) as FootPrintRoof;
+
+                                                // Find the model curves for the original wall
+                                                ICollection<ElementId> ids;
+                                                using (SubTransaction st = new SubTransaction(doc))
+                                                {
+                                                    st.Start();
+                                                    ids = doc.Delete(origRoof);
+                                                    st.RollBack();
+                                                }
+
+                                                // Get the sketch curves for the roof object.
+                                                List<ModelCurve> mLines = new List<ModelCurve>();
+                                                foreach (ElementId id in ids)
+                                                {
+                                                    Element e = doc.GetElement(id);
+                                                    if (e is ModelCurve)
+                                                    {
+                                                        mLines.Add(e as ModelCurve);
+                                                    }
+                                                }
+
+                                                if (mLines.Count != crvArray.Size) // Sketch curves qty doesn't match up with the incoming cuves.  Just recreate the roof.
+                                                {
+                                                    roof = doc.Create.NewFootPrintRoof(crvArray, lvl, roofType, out roofProfile);
+
+                                                    // Match parameters from the original roof to it's new iteration.
+                                                    foreach (Parameter p in origRoof.Parameters)
+                                                    {
+                                                        try
+                                                        {
+                                                            Parameter newParam = roof.get_Parameter(p.Definition.Name);
+                                                            if (newParam != null)
+                                                            {
+                                                                switch (newParam.StorageType)
+                                                                {
+                                                                    case StorageType.Double:
+                                                                        newParam.Set(p.AsDouble());
+                                                                        break;
+                                                                    case StorageType.ElementId:
+                                                                        newParam.Set(p.AsElementId());
+                                                                        break;
+                                                                    case StorageType.Integer:
+                                                                        newParam.Set(p.AsInteger());
+                                                                        break;
+                                                                    case StorageType.String:
+                                                                        newParam.Set(p.AsString());
+                                                                        break;
+                                                                    default:
+                                                                        newParam.Set(p.AsString());
+                                                                        break;
+                                                                }
+                                                            }
+                                                        }
+                                                        catch { }
+                                                    }
+
+                                                    if (offset != 0)
+                                                    {
+                                                        Parameter p = roof.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM);
+                                                        p.Set(offset);
+                                                    }
+                                                    doc.Delete(origRoof.Id);
+
+                                                    // Set the new parameters
+                                                    SetParameters(roof, obj.Parameters);
+
+                                                    // Assign the GH InstanceGuid
+                                                    AssignGuid(roof, uniqueId, instanceSchema);
+                                                }
+                                                else // The curves qty lines up, lets try to modify the roof sketch so we don't have to replace it.
                                                 {
                                                     try
                                                     {
-                                                        Parameter newParam = roof.get_Parameter(p.Definition.Name);
-                                                        if (newParam != null)
+                                                        int crvCount = 0;
+                                                        foreach (ModelCurve l in mLines)
                                                         {
-                                                            switch (newParam.StorageType)
-                                                            {
-                                                                case StorageType.Double:
-                                                                    newParam.Set(p.AsDouble());
-                                                                    break;
-                                                                case StorageType.ElementId:
-                                                                    newParam.Set(p.AsElementId());
-                                                                    break;
-                                                                case StorageType.Integer:
-                                                                    newParam.Set(p.AsInteger());
-                                                                    break;
-                                                                case StorageType.String:
-                                                                    newParam.Set(p.AsString());
-                                                                    break;
-                                                                default:
-                                                                    newParam.Set(p.AsString());
-                                                                    break;
-                                                            }
+                                                            LocationCurve lc = l.Location as LocationCurve;
+                                                            lc.Curve = crvArray.get_Item(crvCount);
+                                                            crvCount++;
                                                         }
+                                                        SetParameters(origRoof, obj.Parameters);
                                                     }
-                                                    catch { }
-                                                }
+                                                    catch // Modificaiton failed, lets just create a new roof.
+                                                    {
+                                                        roof = doc.Create.NewFootPrintRoof(crvArray, lvl, roofType, out roofProfile);
 
-                                                if (offset != 0)
-                                                {
-                                                    Parameter p = roof.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM);
-                                                    p.Set(offset);
+                                                        // Match parameters from the original roof to it's new iteration.
+                                                        foreach (Parameter p in origRoof.Parameters)
+                                                        {
+                                                            try
+                                                            {
+                                                                Parameter newParam = roof.get_Parameter(p.Definition.Name);
+                                                                if (newParam != null)
+                                                                {
+                                                                    switch (newParam.StorageType)
+                                                                    {
+                                                                        case StorageType.Double:
+                                                                            newParam.Set(p.AsDouble());
+                                                                            break;
+                                                                        case StorageType.ElementId:
+                                                                            newParam.Set(p.AsElementId());
+                                                                            break;
+                                                                        case StorageType.Integer:
+                                                                            newParam.Set(p.AsInteger());
+                                                                            break;
+                                                                        case StorageType.String:
+                                                                            newParam.Set(p.AsString());
+                                                                            break;
+                                                                        default:
+                                                                            newParam.Set(p.AsString());
+                                                                            break;
+                                                                    }
+                                                                }
+                                                            }
+                                                            catch { }
+                                                        }
+
+                                                        if (offset != 0)
+                                                        {
+                                                            Parameter p = roof.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM);
+                                                            p.Set(offset);
+                                                        }
+
+                                                        // Set the parameters from the incoming data
+                                                        SetParameters(roof, obj.Parameters);
+
+                                                        // Assign the GH InstanceGuid
+                                                        AssignGuid(roof, uniqueId, instanceSchema);
+
+                                                        doc.Delete(origRoof.Id);
+                                                    }
                                                 }
-                                                doc.Delete(origRoof.Id);
-                                                // Assign the GH InstanceGuid
-                                                AssignGuid(roof, uniqueId, instanceSchema);
                                             }
-                                            else
+                                            else // Only update the parameters
                                             {
                                                 roof = doc.GetElement(existingElems[i]) as FootPrintRoof;
 
@@ -2338,15 +2620,14 @@ namespace LMNA.Lyrebird
 
                                             // Assign the parameters
                                             SetParameters(roof, obj.Parameters);
-
                                         }
                                     }
                                     #endregion
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
-
+                                TaskDialog.Show("Error", ex.Message);
                             }
                         }
                         catch { }
@@ -2423,8 +2704,8 @@ namespace LMNA.Lyrebird
             {
                 FilteredElementCollector collector = new FilteredElementCollector(doc);
                 collector.OfCategory(BuiltInCategory.OST_Roofs);
-                collector.OfClass(typeof(ExtrusionRoof));
-                foreach (ExtrusionRoof r in collector)
+                collector.OfClass(typeof(FootPrintRoof));
+                foreach (FootPrintRoof r in collector)
                 {
                     try
                     {
