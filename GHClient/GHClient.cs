@@ -168,8 +168,18 @@ namespace LMNA.Lyrebird.GH
             DA.GetDataTree(4, out curves);
             DA.GetDataTree(5, out orientations);
             DA.GetDataTree(6, out faceOrientations);
-            if (runCommand == true)
+
+            // Make sure the family and type is set before running the command.
+            if (runCommand && (familyName == null || familyName == "Not Selected"))
             {
+                System.Windows.MessageBox.Show("Please select a family/type by double-clicking on the component before running the command.");
+            }
+            else if (runCommand == true)
+            {
+                // Get the scale
+                GHInfo ghi = new GHInfo();
+                GHScale scale = ghi.GetScale(Rhino.RhinoDoc.ActiveDoc);
+
                 // Send to Revit
                 LyrebirdChannel channel = new LyrebirdChannel(appVersion);
                 channel.Create();
@@ -201,6 +211,8 @@ namespace LMNA.Lyrebird.GH
                                 ro.TypeName = typeName;
                                 ro.Category = category;
                                 ro.GHPath = origPoints.Paths[i].ToString();
+                                ro.GHScaleFactor = scale.ScaleFactor;
+                                ro.GHScaleName = scale.ScaleName;
                                 tempObjs.Add(ro);
                             }
                             obj = tempObjs;
@@ -227,6 +239,8 @@ namespace LMNA.Lyrebird.GH
                                 ro.Origin = null;
                                 ro.Category = category;
                                 ro.GHPath = adaptPoints.Paths[i].ToString();
+                                ro.GHScaleFactor = scale.ScaleFactor;
+                                ro.GHScaleName = scale.ScaleName;
                                 tempObjs.Add(ro);
                             }
                             obj = tempObjs;
@@ -269,6 +283,8 @@ namespace LMNA.Lyrebird.GH
                                             ro.TypeName = typeName;
                                             ro.Origin = null;
                                             ro.GHPath = curves.Paths[i].ToString();
+                                            ro.GHScaleFactor = scale.ScaleFactor;
+                                            ro.GHScaleName = scale.ScaleName;
                                             tempObjs.Add(ro);
                                         }
                                     }
@@ -307,6 +323,8 @@ namespace LMNA.Lyrebird.GH
                                             ro.TypeName = typeName;
                                             ro.Origin = null;
                                             ro.GHPath = curves.Paths[i].ToString();
+                                            ro.GHScaleFactor = scale.ScaleFactor;
+                                            ro.GHScaleName = scale.ScaleName;
                                             tempObjs.Add(ro);
                                         }
                                     }

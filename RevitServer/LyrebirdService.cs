@@ -22,6 +22,10 @@ namespace LMNA.Lyrebird
         private List<RevitParameter> parameters = new List<RevitParameter>();
         private List<LyrebirdId> uniqueIds = new List<LyrebirdId>();
 
+        DisplayUnitType lengthDUT;
+        DisplayUnitType areaDUT;
+        DisplayUnitType volumeDUT;
+
         FamilyInstance hostFinder = null;
 
         private Guid instanceSchemaGUID = new Guid("9ab787e0-1660-40b7-9453-94e1043b58db");
@@ -526,6 +530,15 @@ namespace LMNA.Lyrebird
             {
                 try
                 {
+                    // Set the DisplayUnitTypes
+                    Units units = uiApp.ActiveUIDocument.Document.GetUnits();
+                    FormatOptions fo = units.GetFormatOptions(UnitType.UT_Length);
+                    lengthDUT = fo.DisplayUnits;
+                    fo = units.GetFormatOptions(UnitType.UT_Area);
+                    areaDUT = fo.DisplayUnits;
+                    fo = units.GetFormatOptions(UnitType.UT_Volume);
+                    volumeDUT = fo.DisplayUnits;
+
                     // Find existing elements
                     List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].Category);
                     
@@ -797,7 +810,7 @@ namespace LMNA.Lyrebird
                                 {
                                     try
                                     {
-                                        origin = new XYZ(obj.Origin.X, obj.Origin.Y, obj.Origin.Z);
+                                        origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
                                         fi = doc.Create.NewFamilyInstance(origin, symbol, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
                                     }
                                     catch (Exception ex)
@@ -816,7 +829,7 @@ namespace LMNA.Lyrebird
                                     }
 
                                     // Assign the parameters
-                                    SetParameters(fi, obj.Parameters);
+                                    SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
                                     AssignGuid(fi, uniqueId, instanceSchema);
@@ -826,7 +839,7 @@ namespace LMNA.Lyrebird
                             {
                                 foreach (RevitObject obj in revitObjects)
                                 {
-                                    origin = new XYZ(obj.Origin.X, obj.Origin.Y, obj.Origin.Z);
+                                    origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
                                     
                                     // Find the level
                                     List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint>();
@@ -863,7 +876,7 @@ namespace LMNA.Lyrebird
                                         }
                                     }
                                     // Assign the parameters
-                                    SetParameters(fi, obj.Parameters);
+                                    SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
                                     AssignGuid(fi, uniqueId, instanceSchema);
@@ -938,7 +951,7 @@ namespace LMNA.Lyrebird
                                         try
                                         {
                                             ReferencePoint rp = doc.GetElement(placePointIds[ptNum]) as ReferencePoint;
-                                            XYZ pt = new XYZ(obj.AdaptivePoints[ptNum].X, obj.AdaptivePoints[ptNum].Y, obj.AdaptivePoints[ptNum].Z);
+                                            XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(obj.AdaptivePoints[ptNum].X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.AdaptivePoints[ptNum].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.AdaptivePoints[ptNum].Z, lengthDUT));
                                             XYZ vector = pt.Subtract(rp.Position);
                                             ElementTransformUtils.MoveElement(doc, rp.Id, vector);
                                         }
@@ -946,7 +959,7 @@ namespace LMNA.Lyrebird
                                     }
 
                                     // Assign the parameters
-                                    SetParameters(fi, obj.Parameters);
+                                    SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
                                     AssignGuid(fi, uniqueId, instanceSchema);
@@ -1074,15 +1087,15 @@ namespace LMNA.Lyrebird
                                             Curve crv = null;
                                             if (lbc.CurveType == "Line")
                                             {
-                                                XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                 crv = Line.CreateBound(pt1, pt2);
                                             }
                                             else if (lbc.CurveType == "Arc")
                                             {
-                                                XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                                                XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                                                 crv = Arc.Create(pt1, pt3, pt2);
                                             }
 
@@ -1093,9 +1106,9 @@ namespace LMNA.Lyrebird
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
                                                 
                                                 double offset = 0;
-                                                if (curvePoints[0].Z != lvl.Elevation)
+                                                if (UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) != lvl.Elevation)
                                                 {
-                                                    offset = lvl.Elevation - curvePoints[0].Z;
+                                                    offset = lvl.Elevation - UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT);
                                                 }
                                                     
                                                 // Create the wall
@@ -1110,7 +1123,7 @@ namespace LMNA.Lyrebird
                                                 }
                                                 
                                                 // Assign the parameters
-                                                SetParameters(w, obj.Parameters);
+                                                SetParameters(w, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(w, uniqueId, instanceSchema);
@@ -1122,8 +1135,8 @@ namespace LMNA.Lyrebird
                                             if (symbol != null && lbc.CurveType == "Line")
                                             {
                                                 Curve crv = null;
-                                                XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                 crv = Line.CreateBound(origin, pt2);
 
                                                 // Find the level
@@ -1147,7 +1160,7 @@ namespace LMNA.Lyrebird
                                                 }
 
                                                 // Assign the parameters
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(fi, uniqueId, instanceSchema);
@@ -1163,20 +1176,19 @@ namespace LMNA.Lyrebird
 
                                                 if (lbc.CurveType == "Line")
                                                 {
-                                                    XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                    XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                     crv = Line.CreateBound(origin, pt2);
                                                 }
                                                 else if (lbc.CurveType == "Arc")
                                                 {
-                                                    XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                                                    XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                    XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                    XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                                                     crv = Arc.Create(pt1, pt3, pt2);
                                                 }
                                                 // Find the level
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
-                                                double offset = 0;
 
                                                 // Create the family
                                                 if (symbol.Category.Name == "Detail Items")
@@ -1194,7 +1206,7 @@ namespace LMNA.Lyrebird
                                                     {
                                                         if (lbc.CurveType == "Arc")
                                                         {
-                                                            XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                            XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
                                                             fi = doc.Create.NewFamilyInstance(origin, symbol, lvl, Autodesk.Revit.DB.Structure.StructuralType.Beam);
                                                             // Set the location curve of the column to the line
                                                             LocationCurve lc = fi.Location as LocationCurve;
@@ -1220,7 +1232,7 @@ namespace LMNA.Lyrebird
                                                 }
 
                                                 // Assign the parameters
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(fi, uniqueId, instanceSchema);
@@ -1255,9 +1267,9 @@ namespace LMNA.Lyrebird
 
                                             lvl = GetLevel(allPoints, doc);
                                             
-                                            if (allPoints[0].Z != lvl.Elevation)
+                                            if (UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) != lvl.Elevation)
                                             {
-                                                offset = allPoints[0].Z - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) - lvl.Elevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -1269,16 +1281,16 @@ namespace LMNA.Lyrebird
                                                     LyrebirdCurve lbc = obj.Curves[i];
                                                     if (lbc.CurveType == "Arc")
                                                     {
-                                                        XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                        XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                                                        XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                        XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                        XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                        XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                                                         Arc arc = Arc.Create(pt1, pt3, pt2);
                                                         crvArray.Add(arc);
                                                     }
                                                     else if (lbc.CurveType == "Line")
                                                     {
-                                                        XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                        XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                        XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                        XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                         Line line = Line.CreateBound(pt1, pt2);
                                                         crvArray.Add(line);
                                                     }
@@ -1290,7 +1302,7 @@ namespace LMNA.Lyrebird
 
                                                         foreach (LyrebirdPoint lp in lbc.ControlPoints)
                                                         {
-                                                            XYZ pt = new XYZ(lp.X, lp.Y, lp.Z);
+                                                            XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
                                                             controlPoints.Add(pt);
                                                         }
                                                         NurbSpline spline;
@@ -1321,7 +1333,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Assign the parameters
-                                            SetParameters(w, obj.Parameters);
+                                            SetParameters(w, obj.Parameters, doc);
 
                                             // Assign the GH InstanceGuid
                                             AssignGuid(w, uniqueId, instanceSchema);
@@ -1334,9 +1346,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
                                             
                                             double offset = 0;
-                                            if (obj.Curves[0].ControlPoints[0].Z != lvl.Elevation)
+                                            if (UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) != lvl.Elevation)
                                             {
-                                                offset = obj.Curves[0].ControlPoints[0].Z - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
                                             }
                                             
                                             // Generate the curvearray from the incoming curves
@@ -1353,7 +1365,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Assign the parameters
-                                            SetParameters(flr, obj.Parameters);
+                                            SetParameters(flr, obj.Parameters, doc);
 
                                             // Assign the GH InstanceGuid
                                             AssignGuid(flr, uniqueId, instanceSchema);
@@ -1366,9 +1378,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
                                             
                                             double offset = 0;
-                                            if (obj.Curves[0].ControlPoints[0].Z != lvl.Elevation)
+                                            if (UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) != lvl.Elevation)
                                             {
-                                                offset = obj.Curves[0].ControlPoints[0].Z - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
                                             }
                                             
                                             // Generate the curvearray from the incoming curves
@@ -1392,7 +1404,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Assign the parameters
-                                            SetParameters(roof, obj.Parameters);
+                                            SetParameters(roof, obj.Parameters, doc);
                                             
                                             // Assign the GH InstanceGuid
                                             AssignGuid(roof, uniqueId, instanceSchema);
@@ -1488,7 +1500,7 @@ namespace LMNA.Lyrebird
                                     try
                                     {
                                         // Move family
-                                        origin = new XYZ(obj.Origin.X, obj.Origin.Y, obj.Origin.Z);
+                                        origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
                                         LocationPoint lp = fi.Location as LocationPoint;
                                         XYZ oldLoc = lp.Point;
                                         XYZ translation = origin.Subtract(oldLoc);
@@ -1512,7 +1524,7 @@ namespace LMNA.Lyrebird
                                     }
 
                                     // Assign the parameters
-                                    SetParameters(fi, obj.Parameters);
+                                    SetParameters(fi, obj.Parameters, doc);
                                 }
                             }
                             else
@@ -1532,7 +1544,7 @@ namespace LMNA.Lyrebird
                                         catch { }
                                     }
 
-                                    origin = new XYZ(obj.Origin.X, obj.Origin.Y, obj.Origin.Z);
+                                    origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
 
                                     // Find the level
                                     List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint>();
@@ -1565,7 +1577,7 @@ namespace LMNA.Lyrebird
                                                 XYZ translation = origin.Subtract(oldLoc);
                                                 ElementTransformUtils.MoveElement(doc, fi.Id, translation);
 
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
                                             }
                                             else
                                             {
@@ -1579,7 +1591,24 @@ namespace LMNA.Lyrebird
                                                         Parameter newParam = fi.get_Parameter(p.GUID);
                                                         if (newParam != null)
                                                         {
-                                                            newParam.SetValueString(p.AsValueString());
+                                                            switch (newParam.StorageType)
+                                                            {
+                                                                case StorageType.Double:
+                                                                    newParam.Set(p.AsDouble());
+                                                                    break;
+                                                                case StorageType.ElementId:
+                                                                    newParam.Set(p.AsElementId());
+                                                                    break;
+                                                                case StorageType.Integer:
+                                                                    newParam.Set(p.AsInteger());
+                                                                    break;
+                                                                case StorageType.String:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                                default:
+                                                                    newParam.Set(p.AsString());
+                                                                    break;
+                                                            }
                                                         }
                                                     }
                                                     catch { }
@@ -1588,7 +1617,7 @@ namespace LMNA.Lyrebird
                                                 doc.Delete(origInst.Id);
 
                                                 // Assign the parameters
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(fi, uniqueId, instanceSchema);
@@ -1639,7 +1668,7 @@ namespace LMNA.Lyrebird
                                                 doc.Delete(origInst.Id);
                                                     
                                                 // Assign the parameters
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(fi, uniqueId, instanceSchema);
@@ -1653,13 +1682,13 @@ namespace LMNA.Lyrebird
                                                 XYZ translation = origin.Subtract(oldLoc);
                                                 ElementTransformUtils.MoveElement(doc, fi.Id, translation);
 
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
                                             }
                                         }
                                     }
 
                                     // Assign the parameters
-                                    SetParameters(fi, obj.Parameters);
+                                    SetParameters(fi, obj.Parameters, doc);
                                 }
                                 // delete the host finder
                                 ElementId hostFinderFamily = hostFinder.Symbol.Family.Id;
@@ -1749,7 +1778,7 @@ namespace LMNA.Lyrebird
                                         try
                                         {
                                             ReferencePoint rp = doc.GetElement(placePointIds[ptNum]) as ReferencePoint;
-                                            XYZ pt = new XYZ(obj.AdaptivePoints[ptNum].X, obj.AdaptivePoints[ptNum].Y, obj.AdaptivePoints[ptNum].Z);
+                                            XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(obj.AdaptivePoints[ptNum].X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.AdaptivePoints[ptNum].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.AdaptivePoints[ptNum].Z, lengthDUT));
                                             XYZ vector = pt.Subtract(rp.Position);
                                             ElementTransformUtils.MoveElement(doc, rp.Id, vector);
                                         }
@@ -1757,7 +1786,7 @@ namespace LMNA.Lyrebird
                                     }
 
                                     // Assign the parameters
-                                    SetParameters(fi, obj.Parameters);
+                                    SetParameters(fi, obj.Parameters, doc);
                                 }
 
                             }
@@ -1895,15 +1924,15 @@ namespace LMNA.Lyrebird
                                             Curve crv = null;
                                             if (lbc.CurveType == "Line")
                                             {
-                                                XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                 crv = Line.CreateBound(pt1, pt2);
                                             }
                                             else if (lbc.CurveType == "Arc")
                                             {
-                                                XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                                                XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                                                 crv = Arc.Create(pt1, pt3, pt2);
                                             }
 
@@ -1914,9 +1943,9 @@ namespace LMNA.Lyrebird
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
 
                                                 double offset = 0;
-                                                if (curvePoints[0].Z != lvl.Elevation)
+                                                if (UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) != lvl.Elevation)
                                                 {
-                                                    offset = lvl.Elevation - curvePoints[0].Z;
+                                                    offset = lvl.Elevation - UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT);
                                                 }
 
                                                 // Create the wall
@@ -1944,7 +1973,7 @@ namespace LMNA.Lyrebird
                                                 
 
                                                 // Assign the parameters
-                                                SetParameters(w, obj.Parameters);
+                                                SetParameters(w, obj.Parameters, doc);
                                             }
                                         }
                                         // See if it's a structural column
@@ -1953,8 +1982,8 @@ namespace LMNA.Lyrebird
                                             if (symbol != null && lbc.CurveType == "Line")
                                             {
                                                 Curve crv = null;
-                                                XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                 crv = Line.CreateBound(origin, pt2);
 
                                                 // Find the level
@@ -1978,7 +2007,7 @@ namespace LMNA.Lyrebird
                                                 }
 
                                                 // Assign the parameters
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
                                             }
                                         }
 
@@ -1991,15 +2020,15 @@ namespace LMNA.Lyrebird
 
                                                 if (lbc.CurveType == "Line")
                                                 {
-                                                    XYZ origin = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                    XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                     crv = Line.CreateBound(origin, pt2);
                                                 }
                                                 else if (lbc.CurveType == "Arc")
                                                 {
-                                                    XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                                                    XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                    XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                    XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                                                     crv = Arc.Create(pt1, pt3, pt2);
                                                 }
 
@@ -2010,7 +2039,7 @@ namespace LMNA.Lyrebird
                                                 }
                                                 catch { }
                                                 // Assign the parameters
-                                                SetParameters(fi, obj.Parameters);
+                                                SetParameters(fi, obj.Parameters, doc);
                                             }
                                         }
                                     }
@@ -2071,16 +2100,16 @@ namespace LMNA.Lyrebird
                                                     LyrebirdCurve lbc = obj.Curves[j];
                                                     if (lbc.CurveType == "Arc")
                                                     {
-                                                        XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                        XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                                                        XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                        XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                        XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                        XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                                                         Arc arc = Arc.Create(pt1, pt3, pt2);
                                                         crvArray.Add(arc);
                                                     }
                                                     else if (lbc.CurveType == "Line")
                                                     {
-                                                        XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                                                        XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                        XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                        XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                                                         Line line = Line.CreateBound(pt1, pt2);
                                                         crvArray.Add(line);
                                                     }
@@ -2092,7 +2121,7 @@ namespace LMNA.Lyrebird
 
                                                         foreach (LyrebirdPoint lp in lbc.ControlPoints)
                                                         {
-                                                            XYZ pt = new XYZ(lp.X, lp.Y, lp.Z);
+                                                            XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
                                                             controlPoints.Add(pt);
                                                         }
                                                         NurbSpline spline;
@@ -2124,7 +2153,7 @@ namespace LMNA.Lyrebird
                                                 using (SubTransaction st = new SubTransaction(doc))
                                                 {
                                                     st.Start();
-                                                    ids = doc.Delete(origWall);
+                                                    ids = doc.Delete(origWall.Id);
                                                     st.RollBack();
                                                 }
 
@@ -2271,7 +2300,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Assign the parameters
-                                            SetParameters(w, obj.Parameters);
+                                            SetParameters(w, obj.Parameters, doc);
                                         }
                                         else if (obj.Category == "Floors")
                                         {
@@ -2280,9 +2309,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
 
                                             double offset = 0;
-                                            if (obj.Curves[0].ControlPoints[0].Z != lvl.Elevation)
+                                            if (UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) != lvl.Elevation)
                                             {
-                                                offset = obj.Curves[0].ControlPoints[0].Z - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -2322,7 +2351,6 @@ namespace LMNA.Lyrebird
                                                 
                                                 if (mLines.Count != crvArray.Size) // The sketch is different from the incoming curves so floor is recreated
                                                 {
-                                                    TaskDialog.Show("Test", "MLines: " + mLines.Count.ToString() + "\ncrvArray: " + crvArray.Size.ToString());
                                                     flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
 
                                                     foreach (Parameter p in origFloor.Parameters)
@@ -2377,7 +2405,7 @@ namespace LMNA.Lyrebird
                                                         }
 
                                                         // Set the incoming parameters
-                                                        SetParameters(origFloor, obj.Parameters);
+                                                        SetParameters(origFloor, obj.Parameters, doc);
                                                     }
                                                     catch (Exception ex) // There was an error in trying to recreate it.  Just delete the original and recreate the thing.
                                                     {
@@ -2424,7 +2452,7 @@ namespace LMNA.Lyrebird
                                                         doc.Delete(origFloor.Id);
 
                                                         // Set the incoming parameters
-                                                        SetParameters(flr, obj.Parameters);
+                                                        SetParameters(flr, obj.Parameters, doc);
                                                         // Assign the GH InstanceGuid
                                                         AssignGuid(flr, uniqueId, instanceSchema);
                                                     }
@@ -2446,7 +2474,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Assign the parameters
-                                            SetParameters(flr, obj.Parameters);
+                                            SetParameters(flr, obj.Parameters, doc);
                                         }
                                         else if (obj.Category == "Roofs")
                                         {
@@ -2455,9 +2483,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
 
                                             double offset = 0;
-                                            if (obj.Curves[0].ControlPoints[0].Z != lvl.Elevation)
+                                            if (UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) != lvl.Elevation)
                                             {
-                                                offset = obj.Curves[0].ControlPoints[0].Z - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -2476,7 +2504,7 @@ namespace LMNA.Lyrebird
                                                 using (SubTransaction st = new SubTransaction(doc))
                                                 {
                                                     st.Start();
-                                                    ids = doc.Delete(origRoof);
+                                                    ids = doc.Delete(origRoof.Id);
                                                     st.RollBack();
                                                 }
 
@@ -2534,7 +2562,7 @@ namespace LMNA.Lyrebird
                                                     doc.Delete(origRoof.Id);
 
                                                     // Set the new parameters
-                                                    SetParameters(roof, obj.Parameters);
+                                                    SetParameters(roof, obj.Parameters, doc);
 
                                                     // Assign the GH InstanceGuid
                                                     AssignGuid(roof, uniqueId, instanceSchema);
@@ -2550,7 +2578,7 @@ namespace LMNA.Lyrebird
                                                             lc.Curve = crvArray.get_Item(crvCount);
                                                             crvCount++;
                                                         }
-                                                        SetParameters(origRoof, obj.Parameters);
+                                                        SetParameters(origRoof, obj.Parameters, doc);
                                                     }
                                                     catch // Modificaiton failed, lets just create a new roof.
                                                     {
@@ -2594,7 +2622,7 @@ namespace LMNA.Lyrebird
                                                         }
 
                                                         // Set the parameters from the incoming data
-                                                        SetParameters(roof, obj.Parameters);
+                                                        SetParameters(roof, obj.Parameters, doc);
 
                                                         // Assign the GH InstanceGuid
                                                         AssignGuid(roof, uniqueId, instanceSchema);
@@ -2619,7 +2647,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Assign the parameters
-                                            SetParameters(roof, obj.Parameters);
+                                            SetParameters(roof, obj.Parameters, doc);
                                         }
                                     }
                                     #endregion
@@ -2793,16 +2821,16 @@ namespace LMNA.Lyrebird
                 LyrebirdCurve lbc = curves[i];
                 if (lbc.CurveType == "Arc")
                 {
-                    XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
-                    XYZ pt3 = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                    XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                    XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
                     Arc arc = Arc.Create(pt1, pt3, pt2);
                     crvArray.Append(arc);
                 }
                 else if (lbc.CurveType == "Line")
                 {
-                    XYZ pt1 = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
-                    XYZ pt2 = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                    XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
                     Line line = Line.CreateBound(pt1, pt2);
                     crvArray.Append(line);
                 }
@@ -2814,7 +2842,7 @@ namespace LMNA.Lyrebird
 
                     foreach (LyrebirdPoint lp in lbc.ControlPoints)
                     {
-                        XYZ pt = new XYZ(lp.X, lp.Y, lp.Z);
+                        XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
                         controlPoints.Add(pt);
                     }
                                                         
@@ -2848,7 +2876,7 @@ namespace LMNA.Lyrebird
                 }
                 else
                 {
-                    if (Math.Abs(l.Elevation - controlPoints[0].Z) < Math.Abs(lvl.Elevation - controlPoints[0].Z))
+                    if (Math.Abs(l.Elevation - UnitUtils.ConvertToInternalUnits(controlPoints[0].Z, lengthDUT)) < Math.Abs(lvl.Elevation - UnitUtils.ConvertToInternalUnits(controlPoints[0].Z, lengthDUT)))
                     {
                         lvl = l;
                     }
@@ -2904,11 +2932,11 @@ namespace LMNA.Lyrebird
                     XYZ movedPt;
                     if (hostType == 1 || hostType == 3)
                     {
-                        movedPt = new XYZ(location.X, location.Y, location.Z + 0.1);
+                        movedPt = new XYZ(location.X, location.Y, location.Z + 0.00328);
                     }
                     else
                     {
-                        movedPt = new XYZ(location.X, location.Y, location.Z - 0.1);
+                        movedPt = new XYZ(location.X, location.Y, location.Z - 0.00328);
                     }
                     XYZ vector = movedPt.Subtract(rp.Position);
                     ElementTransformUtils.MoveElement(doc, rp.Id, vector);
@@ -2990,8 +3018,6 @@ namespace LMNA.Lyrebird
         {
             Face face = null;
 
-            bool found = false;
-            
             FilteredElementCollector elementCollector = new FilteredElementCollector(doc);
             elementCollector.WhereElementIsNotElementType();
 
@@ -3110,7 +3136,7 @@ namespace LMNA.Lyrebird
         }
 
         #region Assign Parameter Values
-        private void SetParameters(FamilyInstance fi, List<RevitParameter> parameters)
+        private void SetParameters(FamilyInstance fi, List<RevitParameter> parameters, Document doc)
         {
             foreach (RevitParameter rp in parameters)
             {
@@ -3120,7 +3146,14 @@ namespace LMNA.Lyrebird
                     switch (rp.StorageType)
                     {
                         case "Double":
-                            p.Set(Convert.ToDouble(rp.Value));
+                            if (p.Definition.ParameterType == ParameterType.Area)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Volume)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Length)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                            else
+                                p.Set(Convert.ToDouble(rp.Value));
                             break;
                         case "Integer":
                             p.Set(Convert.ToInt32(rp.Value));
@@ -3129,7 +3162,10 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            if (p.Definition.ParameterType == ParameterType.Material)
+                                p.Set(GetMaterial(rp.Value, doc));
+                            else
+                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
                             break;
                         default:
                             p.Set(rp.Value);
@@ -3143,7 +3179,7 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void SetParameters(Wall wall, List<RevitParameter> parameters)
+        private void SetParameters(Wall wall, List<RevitParameter> parameters, Document doc)
         {
             foreach (RevitParameter rp in parameters)
             {
@@ -3153,7 +3189,14 @@ namespace LMNA.Lyrebird
                     switch (rp.StorageType)
                     {
                         case "Double":
-                            p.Set(Convert.ToDouble(rp.Value));
+                            if (p.Definition.ParameterType == ParameterType.Area)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Volume)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Length)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                            else
+                                p.Set(Convert.ToDouble(rp.Value));
                             break;
                         case "Integer":
                             p.Set(Convert.ToInt32(rp.Value));
@@ -3162,7 +3205,10 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            if (p.Definition.ParameterType == ParameterType.Material)
+                                p.Set(GetMaterial(rp.Value, doc));
+                            else
+                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
                             break;
                         default:
                             p.Set(rp.Value);
@@ -3176,7 +3222,7 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void SetParameters(Floor floor, List<RevitParameter> parameters)
+        private void SetParameters(Floor floor, List<RevitParameter> parameters, Document doc)
         {
             foreach (RevitParameter rp in parameters)
             {
@@ -3186,7 +3232,14 @@ namespace LMNA.Lyrebird
                     switch (rp.StorageType)
                     {
                         case "Double":
-                            p.Set(Convert.ToDouble(rp.Value));
+                            if (p.Definition.ParameterType == ParameterType.Area)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Volume)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Length)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                            else
+                                p.Set(Convert.ToDouble(rp.Value));
                             break;
                         case "Integer":
                             p.Set(Convert.ToInt32(rp.Value));
@@ -3195,7 +3248,10 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            if (p.Definition.ParameterType == ParameterType.Material)
+                                p.Set(GetMaterial(rp.Value, doc));
+                            else
+                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
                             break;
                         default:
                             p.Set(rp.Value);
@@ -3209,7 +3265,7 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void SetParameters(FootPrintRoof roof, List<RevitParameter> parameters)
+        private void SetParameters(FootPrintRoof roof, List<RevitParameter> parameters, Document doc)
         {
             foreach (RevitParameter rp in parameters)
             {
@@ -3219,7 +3275,14 @@ namespace LMNA.Lyrebird
                     switch (rp.StorageType)
                     {
                         case "Double":
-                            p.Set(Convert.ToDouble(rp.Value));
+                            if (p.Definition.ParameterType == ParameterType.Area)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Volume)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Length)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                            else
+                                p.Set(Convert.ToDouble(rp.Value));
                             break;
                         case "Integer":
                             p.Set(Convert.ToInt32(rp.Value));
@@ -3228,7 +3291,10 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            if (p.Definition.ParameterType == ParameterType.Material)
+                                p.Set(GetMaterial(rp.Value, doc));
+                            else
+                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
                             break;
                         default:
                             p.Set(rp.Value);
@@ -3240,6 +3306,39 @@ namespace LMNA.Lyrebird
                     TaskDialog.Show("Error", ex.Message);
                 }
             }
+        }
+
+        private ElementId GetMaterial(string value, Document doc)
+        {
+            ElementId eid = null;
+
+            try
+            {
+                eid = new ElementId(Convert.ToInt32(value));
+            }
+            catch { }
+
+            if (eid == null)
+            {
+                // Get the materials
+                FilteredElementCollector matCollector = new FilteredElementCollector(doc);
+                matCollector.OfClass(typeof(Material));
+                foreach (Material m in matCollector)
+                {
+                    if (m.Name.ToUpper() == value.ToUpper())
+                    {
+                        eid = m.Id;
+                    }
+                }
+            }
+
+            if (eid == null)
+            {
+                // try creating material
+                eid = Material.Create(doc, value);
+            }
+
+            return eid;
         }
         
         #endregion
