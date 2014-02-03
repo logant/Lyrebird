@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 
 using LMNA.Lyrebird.LyrebirdCommon;
+using System.Diagnostics;
 
 namespace LMNA.Lyrebird.GH
 {
@@ -200,19 +202,24 @@ namespace LMNA.Lyrebird.GH
                             for (int i = 0; i < origPoints.Branches.Count; i++)
                             {
                                 GH_Point ghpt = origPoints[i][0];
-                                LyrebirdPoint point = new LyrebirdPoint();
-                                point.X = ghpt.Value.X;
-                                point.Y = ghpt.Value.Y;
-                                point.Z = ghpt.Value.Z;
+                                LyrebirdPoint point = new LyrebirdPoint
+                                {
+                                    X = ghpt.Value.X,
+                                    Y = ghpt.Value.Y,
+                                    Z = ghpt.Value.Z
+                                };
 
-                                RevitObject ro = new RevitObject();
-                                ro.Origin = point;
-                                ro.FamilyName = familyName;
-                                ro.TypeName = typeName;
-                                ro.Category = category;
-                                ro.GHPath = origPoints.Paths[i].ToString();
-                                ro.GHScaleFactor = scale.ScaleFactor;
-                                ro.GHScaleName = scale.ScaleName;
+                                RevitObject ro = new RevitObject
+                                {
+                                    Origin = point,
+                                    FamilyName = familyName,
+                                    TypeName = typeName,
+                                    Category = category,
+                                    GHPath = origPoints.Paths[i].ToString(),
+                                    GHScaleFactor = scale.ScaleFactor,
+                                    GHScaleName = scale.ScaleName
+                                };
+                              
                                 tempObjs.Add(ro);
                             }
                             obj = tempObjs;
@@ -365,15 +372,17 @@ namespace LMNA.Lyrebird.GH
                                     string paramInfo = param.Description;
                                     string[] pi = paramInfo.Split(new string[] { "\n", ":" }, StringSplitOptions.None);
                                     string paramName = null;
-                                    string paramStorageType = null;
                                     try
                                     {
-                                        paramName = pi[1].Substring(1);
-                                        paramStorageType = pi[5].Substring(1);
-                                        rp.ParameterName = paramName;
-                                        rp.StorageType = paramStorageType;
+                                      paramName = pi[1].Substring(1);
+                                      string paramStorageType = pi[5].Substring(1);
+                                      rp.ParameterName = paramName;
+                                      rp.StorageType = paramStorageType;
                                     }
-                                    catch { }
+                                    catch (Exception ex)
+                                    {
+                                      Debug.WriteLine(ex.Message);
+                                    }
                                     if (paramName != null)
                                     {
                                         GH_Structure<IGH_Goo> data = null;
@@ -381,7 +390,10 @@ namespace LMNA.Lyrebird.GH
                                         {
                                             DA.GetDataTree(i, out data);
                                         }
-                                        catch { }
+                                        catch (Exception ex)
+                                        {
+                                          Debug.WriteLine(ex.Message);
+                                        }
                                         if (data != null)
                                         {
                                             string value = data[r][0].ToString();
@@ -406,7 +418,10 @@ namespace LMNA.Lyrebird.GH
                         try
                         {
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                          Debug.WriteLine(ex.Message);
+                        }
                     }
                     else
                     {
@@ -430,7 +445,7 @@ namespace LMNA.Lyrebird.GH
                     {
                         type = "Type";
                     }
-                    sb.AppendLine(string.Format("Parameter{0}: {1}  /  {2}  /  {3}", (i + 1).ToString(), rp.ParameterName, rp.StorageType, type));
+                    sb.AppendLine(string.Format("Parameter{0}: {1}  /  {2}  /  {3}", (i + 1).ToString(CultureInfo.InvariantCulture), rp.ParameterName, rp.StorageType, type));
                 }
                 message = sb.ToString();
             }
@@ -479,6 +494,7 @@ namespace LMNA.Lyrebird.GH
                 }
                 catch (Exception ex)
                 {
+                    Debug.WriteLine(ex.Message);
                     System.Windows.Forms.MessageBox.Show("The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.");
                 }
 
@@ -559,8 +575,8 @@ namespace LMNA.Lyrebird.GH
                     for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 7; i++)
                     {
                         Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject();
-                        param.Name = "Parameter" + (i - 7).ToString();
-                        param.NickName = "P" + (i - 7).ToString();
+                        param.Name = "Parameter" + (i - 7).ToString(CultureInfo.InvariantCulture);
+                        param.NickName = "P" + (i - 7).ToString(CultureInfo.InvariantCulture);
                         param.Description = "Parameter Name: " + inputParameters[i - 8].ParameterName + "\nIs Type: " + inputParameters[i - 8].IsType.ToString() + "\nStorageType: " + inputParameters[i - 8].StorageType;
                         param.Optional = true;
                         param.Access = GH_ParamAccess.tree;
@@ -608,10 +624,10 @@ namespace LMNA.Lyrebird.GH
                         }
                         if (param.NickName.Length == 2 && param.NickName.Substring(0, 1) == "P" && !renamed)
                         {
-                            param.NickName = "P" + (i + 1).ToString();
+                            param.NickName = "P" + (i + 1).ToString(CultureInfo.InvariantCulture);
                         }
                     }
-                    param.Name = "Parameter" + (i + 1).ToString();
+                    param.Name = "Parameter" + (i + 1).ToString(CultureInfo.InvariantCulture);
                     //param.NickName = "P" + (i + 1).ToString();
                     param.Description = "Parameter Name: " + inputParameters[i].ParameterName + "\nIs Type: " + inputParameters[i].IsType.ToString() + "\nStorageType: " + inputParameters[i].StorageType;
                     Params.RegisterInputParam(param);
@@ -634,11 +650,14 @@ namespace LMNA.Lyrebird.GH
                 try
                 {
                     RevitParameter rp = inputParameters[i];
-                    writer.SetString("ParameterName" + i.ToString(), rp.ParameterName);
-                    writer.SetString("StorageType" + i.ToString(), rp.StorageType);
-                    writer.SetBoolean("IsType" + i.ToString(), rp.IsType);
+                    writer.SetString("ParameterName" + i.ToString(CultureInfo.InvariantCulture), rp.ParameterName);
+                    writer.SetString("StorageType" + i.ToString(CultureInfo.InvariantCulture), rp.StorageType);
+                    writer.SetBoolean("IsType" + i.ToString(CultureInfo.InvariantCulture), rp.IsType);
                 }
-                catch { }
+                catch (Exception exception)
+                {
+                  Debug.WriteLine(exception.Message);
+                }
             }
             return base.Write(writer);
         }
@@ -656,9 +675,9 @@ namespace LMNA.Lyrebird.GH
                 RevitParameter rp = new RevitParameter();
                 try
                 {
-                    rp.ParameterName = reader.GetString("ParameterName" + i.ToString());
-                    rp.StorageType = reader.GetString("StorageType" + i.ToString());
-                    rp.IsType = reader.GetBoolean("IsType" + i.ToString());
+                    rp.ParameterName = reader.GetString("ParameterName" + i.ToString(CultureInfo.InvariantCulture));
+                    rp.StorageType = reader.GetString("StorageType" + i.ToString(CultureInfo.InvariantCulture));
+                    rp.IsType = reader.GetBoolean("IsType" + i.ToString(CultureInfo.InvariantCulture));
                     parameters.Add(rp);
                 }
                 catch
@@ -694,7 +713,10 @@ namespace LMNA.Lyrebird.GH
                     ro.Orientation = p;
                     tempObj.Add(ro);
                 }
-                catch { }
+                catch (Exception exception)
+                {
+                  Debug.WriteLine(exception.Message);
+                }
             }
             return tempObj;
         }
@@ -717,7 +739,10 @@ namespace LMNA.Lyrebird.GH
                     ro.FaceOrientation = p;
                     tempObj.Add(ro);
                 }
-                catch { }
+                catch (Exception exception)
+                {
+                  Debug.WriteLine(exception.Message);
+                }
             }
             return tempObj;
         }
@@ -779,7 +804,7 @@ namespace LMNA.Lyrebird.GH
                 }
                 else
                 {
-                    double incr = 1.0 / 100;
+                    const double incr = 1.0 / 100;
                     List<LyrebirdPoint> pts = new List<LyrebirdPoint>();
                     List<double> weights = new List<double>();
                     for (int i = 0; i <= 100; i++)
@@ -876,11 +901,11 @@ namespace LMNA.Lyrebird.GH
             if (nurbs == null) { return false; }
             double t0 = nurbs.Domain.Min;
             double t1 = nurbs.Domain.Max;
-            double t;
             int LN = L.Count;
             do
             {
-                if (!nurbs.GetNextDiscontinuity(Rhino.Geometry.Continuity.C1_locus_continuous, t0, t1, out t)) { break; }
+              double t;
+              if (!nurbs.GetNextDiscontinuity(Rhino.Geometry.Continuity.C1_locus_continuous, t0, t1, out t)) { break; }
                 Rhino.Geometry.Interval trim = new Rhino.Geometry.Interval(t0, t);
                 if (trim.Length < 1e-10)
                 {

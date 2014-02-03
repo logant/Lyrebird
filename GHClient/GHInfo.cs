@@ -10,9 +10,8 @@ namespace LMNA.Lyrebird.GH
         public GHScale GetScale(Rhino.RhinoDoc rhinoDoc)
         {
             // Scale factor is based on assumption of feet based units.
-            GHScale ghScale;
 
-            double scale = 1.0;
+          double scale = 1.0;
             Rhino.UnitSystem us = rhinoDoc.ModelUnitSystem;
             string units = us.ToString();
             scale = 1.0;
@@ -97,7 +96,7 @@ namespace LMNA.Lyrebird.GH
                     break;
             }
 
-            ghScale = new GHScale(units, scale);
+            GHScale ghScale = new GHScale(units, scale);
             return ghScale;
         }
     }

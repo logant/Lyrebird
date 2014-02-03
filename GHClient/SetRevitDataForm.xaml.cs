@@ -23,13 +23,13 @@ namespace LMNA.Lyrebird.GH
     public partial class SetRevitDataForm : Window
     {
         static LinearGradientBrush enterBrush = null;
-        GHClient parent;
-        LyrebirdChannel channel;
+        readonly GHClient parent;
+        readonly LyrebirdChannel channel;
 
         string category;
         string familyName;
         RevitObject familyObj;
-        List<RevitObject> familyNames;
+        readonly List<RevitObject> familyNames;
         string typeName;
         List<string> typeNames;
         List<RevitParameter> parameters;
@@ -63,7 +63,7 @@ namespace LMNA.Lyrebird.GH
                         MessageBox.Show("Error!!!!!!!!!!");
                     }
                     RevitObject[] temp = channel.FamilyNames().ToArray();
-                    if (temp != null && temp.Count() > 0)
+                    if (temp != null && temp.Any())
                         familyNames = channel.FamilyNames().ToList();
                     else if (temp == null)
                     {
@@ -202,9 +202,12 @@ namespace LMNA.Lyrebird.GH
         private void familyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             RevitObject fam = familyComboBox.SelectedItem as RevitObject;
-            familyName = fam.FamilyName;
-            category = fam.Category;
-            familyObj = fam;
+            if (fam != null)
+            {
+                familyName = fam.FamilyName;
+                category = fam.Category;
+                familyObj = fam;
+            }
 
             // get the type names
             typeNames = new List<string>();
@@ -215,7 +218,7 @@ namespace LMNA.Lyrebird.GH
                 typeComboBox.SelectedIndex = 0;
 
                 string type = parent.TypeName;
-                if (type != null && type.Length > 0)
+                if (!string.IsNullOrEmpty(type))
                 {
                     for (int i = 0; i < typeNames.Count; i++)
                     {
@@ -246,7 +249,7 @@ namespace LMNA.Lyrebird.GH
         public void AddControls()
         {
             controlPanel.Children.Clear();
-            usedParameters.Sort((x, y) => String.Compare(x.ParameterName, y.ParameterName));
+            usedParameters.Sort((x, y) => String.CompareOrdinal(x.ParameterName, y.ParameterName));
             if (usedParameters.Count > 0)
             {
                 for (int i = 1; i <= usedParameters.Count; i++)

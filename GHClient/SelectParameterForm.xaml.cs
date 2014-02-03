@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -20,11 +21,11 @@ namespace LMNA.Lyrebird.GH
     /// </summary>
     public partial class SelectParameterForm : Window
     {
-        List<RevitParameter> parameters;
+        readonly List<RevitParameter> parameters;
 
         LinearGradientBrush enterBrush;
 
-        SetRevitDataForm parent;
+        readonly SetRevitDataForm parent;
 
         public SelectParameterForm(SetRevitDataForm _parent, List<RevitParameter> allParams, List<RevitParameter> selectedParams)
         {
@@ -44,7 +45,7 @@ namespace LMNA.Lyrebird.GH
                     RevitParameter rp = listView.Items[i] as RevitParameter;
                     foreach (RevitParameter sp in selectedParams)
                     {
-                        if (rp.ParameterName == sp.ParameterName)
+                        if (rp != null && rp.ParameterName == sp.ParameterName)
                         {
                             listView.SelectedItems.Add(rp);
                         }
@@ -70,7 +71,10 @@ namespace LMNA.Lyrebird.GH
                         RevitParameter rp = item;
                         selectedParams.Add(rp);
                     }
-                    catch { }
+                    catch (Exception exception)
+                    {
+                      Debug.WriteLine(exception.Message);
+                    }
                 }
             }
             catch (Exception ex)

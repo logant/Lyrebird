@@ -12,9 +12,9 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         ILyrebirdService _channel;
         NetNamedPipeBinding _binding;
         EndpointAddress _endpoint;
-        object _locker;
+        readonly object _locker;
         bool _disposed;
-        int productId;
+        readonly int productId;
 
         // Public Constructor
         public LyrebirdChannel(int prodId)
