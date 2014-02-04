@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
@@ -19,7 +20,7 @@ namespace LMNA.Lyrebird
         bool serverActive = false;
         static RibbonItem serverButton;
         ServiceHost serviceHost;
-        Uri address = new Uri("net.pipe://localhost/LMNts/LyrebirdServer/Revit2014");
+        readonly Uri address = new Uri("net.pipe://localhost/LMNts/LyrebirdServer/Revit2014");
         bool disableButton = false;
 
         internal static UIApplication uiApp = null;
@@ -52,7 +53,10 @@ namespace LMNA.Lyrebird
                 {
                     serviceHost.Close();
                 }
-                catch { }
+                catch (Exception exception)
+                {
+                  Debug.WriteLine(exception.Message);
+                }
             }
             return Result.Succeeded;
         }
@@ -102,7 +106,7 @@ namespace LMNA.Lyrebird
                 }
 
                 // Create the tab if necessary
-                string tabName = "LMN"; 
+                const string tabName = "LMN"; 
                 Autodesk.Windows.RibbonControl ribbon = Autodesk.Windows.ComponentManager.Ribbon;
                 Autodesk.Windows.RibbonTab tab = null;
                 foreach (Autodesk.Windows.RibbonTab t in ribbon.Tabs)
@@ -186,7 +190,7 @@ namespace LMNA.Lyrebird
             catch (Exception ex)
             {
                 //TaskDialog.Show("Error at Idle", ex.Message);
-                uiApp.Application.WriteJournalComment("Lyrebird Error: " + ex.ToString(), true);
+                if (uiApp != null) uiApp.Application.WriteJournalComment("Lyrebird Error: " + ex.ToString(), true);
             }
         }
 
@@ -204,12 +208,14 @@ namespace LMNA.Lyrebird
             }
             catch (System.ServiceModel.AddressAlreadyInUseException ex)
             {
+                Debug.WriteLine(ex.Message);
                 ServiceOff();
                 disableButton = true;
             }
             catch (System.ServiceModel.AddressAccessDeniedException ex)
             {
                 // Couldn"t Open the Server
+                Debug.WriteLine(ex.Message);  
                 ServiceOff();
             }
             catch (Exception ex)
@@ -234,10 +240,13 @@ namespace LMNA.Lyrebird
                 serverActive = false;
                 RibbonButton button = serverButton as RibbonButton;
                 BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_Off.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                button.LargeImage = bms;
-                button.ItemText = "Lyrebird\nServer Off";
-                button.ToolTip = "The Lyrebird Server is currently off and will not accept requests for data or create objects.  Push button to toggle the server on.";
-                serverButton = button;
+                if (button != null)
+                {
+                    button.LargeImage = bms;
+                    button.ItemText = "Lyrebird\nServer Off";
+                    button.ToolTip = "The Lyrebird Server is currently off and will not accept requests for data or create objects.  Push button to toggle the server on.";
+                    serverButton = button;
+                }
                 ServiceOff();
             }
             else
@@ -245,10 +254,13 @@ namespace LMNA.Lyrebird
                 serverActive = true;
                 RibbonButton rbutton = serverButton as RibbonButton;
                 BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                rbutton.LargeImage = bms;
-                rbutton.ItemText = "Lyrebird\nServer On";
-                rbutton.ToolTip = "The Lyrebird Server currently on and will accept requests for data and can create objects.  Push button to toggle the server off.";
-                serverButton = rbutton;
+                if (rbutton != null)
+                {
+                    rbutton.LargeImage = bms;
+                    rbutton.ItemText = "Lyrebird\nServer On";
+                    rbutton.ToolTip = "The Lyrebird Server currently on and will accept requests for data and can create objects.  Push button to toggle the server off.";
+                    serverButton = rbutton;
+                }
                 ServiceOn();
             }
             Properties.Settings.Default.serverActive = serverActive;
