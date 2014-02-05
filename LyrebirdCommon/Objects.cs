@@ -48,6 +48,9 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         public string Category { get; set; }
 
         [DataMember]
+        public int CategoryId { get; set; }
+
+        [DataMember]
         public string FamilyName { get; set; }
 
         [DataMember]
@@ -98,10 +101,11 @@ namespace LMNA.Lyrebird.LyrebirdCommon
             Orientation = orient;
         }
 
-        public RevitObject(string category, string family)
+        public RevitObject(string category,int categoryId, string family)
         {
             FamilyName = family;
             Category = category;
+            CategoryId = categoryId;
         }
 
         public RevitObject()

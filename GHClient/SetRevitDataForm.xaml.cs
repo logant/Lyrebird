@@ -27,6 +27,7 @@ namespace LMNA.Lyrebird.GH
         readonly LyrebirdChannel channel;
 
         string category;
+        int categoryId;
         string familyName;
         RevitObject familyObj;
         readonly List<RevitObject> familyNames;
@@ -138,6 +139,7 @@ namespace LMNA.Lyrebird.GH
             parent.FamilyName = familyName;
             parent.TypeName = typeName;
             parent.Category = category;
+            parent.CategoryId = categoryId;
             RevitParameter rp = new RevitParameter();
             parent.InputParams = usedParameters;
             this.Close();
@@ -206,6 +208,8 @@ namespace LMNA.Lyrebird.GH
             {
                 familyName = fam.FamilyName;
                 category = fam.Category;
+                catNameLabel.Content = "[ " + category + " ]"; 
+                categoryId = fam.CategoryId;
                 familyObj = fam;
             }
 

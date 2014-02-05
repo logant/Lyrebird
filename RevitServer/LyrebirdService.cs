@@ -38,7 +38,7 @@ namespace LMNA.Lyrebird
 
         public List<RevitObject> GetFamilyNames()
         {
-            familyNames.Add(new RevitObject("NULL", "NULL"));
+            familyNames.Add(new RevitObject("NULL", -1, "NULL"));
             lock (_locker)
             {
                 try
@@ -52,20 +52,31 @@ namespace LMNA.Lyrebird
                     List<RevitObject> families = new List<RevitObject>();
                     foreach (Family f in familyCollector)
                     {
-                        RevitObject ro = new RevitObject(f.FamilyCategory.Name, f.Name);
+                        RevitObject ro = new RevitObject(f.FamilyCategory.Name, f.FamilyCategory.Id.IntegerValue, f.Name);
                         families.Add(ro);
                     }
 
                     // Add System families
-                    RevitObject wallObj = new RevitObject("Walls", "Basic Wall");
+                    FilteredElementCollector wallTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
+                    wallTypeCollector.OfClass(typeof(WallType));
+                    WallType wt = wallTypeCollector.FirstElement() as WallType;
+                    RevitObject wallObj = new RevitObject(wt.Category.Name, wt.Category.Id.IntegerValue, wt.Category.Name);
                     families.Add(wallObj);
-                    RevitObject curtainObj = new RevitObject("Walls", "Curtain Wall");
-                    families.Add(curtainObj);
-                    RevitObject stackedObj = new RevitObject("Walls", "Stacked Wall");
-                    families.Add(stackedObj);
-                    RevitObject floorObj = new RevitObject("Floors", "Floor");
+                    //RevitObject curtainObj = new RevitObject("Walls", "Curtain Wall");
+                    //families.Add(curtainObj);
+                    //RevitObject stackedObj = new RevitObject("Walls", "Stacked Wall");
+                    //families.Add(stackedObj);
+                    
+                    FilteredElementCollector floorTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
+                    floorTypeCollector.OfClass(typeof(FloorType));
+                    FloorType ft = floorTypeCollector.FirstElement() as FloorType;
+                    RevitObject floorObj = new RevitObject(ft.Category.Name, ft.Category.Id.IntegerValue, ft.Category.Name);
                     families.Add(floorObj);
-                    RevitObject roofObj = new RevitObject("Roofs", "Roof");
+
+                    FilteredElementCollector roofTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
+                    roofTypeCollector.OfClass(typeof(RoofType));
+                    RoofType rt = roofTypeCollector.FirstElement() as  RoofType;
+                    RevitObject roofObj = new RevitObject(rt.Category.Name, rt.Category.Id.IntegerValue, rt.Category.Name);
                     families.Add(roofObj);
 
                     families.Sort((x, y) => String.CompareOrdinal(x.FamilyName, y.FamilyName));
@@ -91,7 +102,7 @@ namespace LMNA.Lyrebird
                     var doc = uiApp.ActiveUIDocument.Document;
                     typeNames = new List<string>();
                     List<string> types = new List<string>();
-                    if (revitFamily.Category == "Walls")
+                    if (revitFamily.CategoryId == -2000011)
                     {
                         // get wall types
                         FilteredElementCollector wallCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
@@ -103,7 +114,7 @@ namespace LMNA.Lyrebird
                         }
                     }
 
-                    else if (revitFamily.Category == "Floors")
+                    else if (revitFamily.CategoryId == -2000032)
                     {
                         // Get floor types
                         FilteredElementCollector floorCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
@@ -115,7 +126,7 @@ namespace LMNA.Lyrebird
                         }
                     }
 
-                    else if (revitFamily.Category == "Roofs")
+                    else if (revitFamily.CategoryId == -2000035)
                     {
                         // Get roof types
                         FilteredElementCollector roofCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
@@ -164,7 +175,7 @@ namespace LMNA.Lyrebird
                 {
                     var doc = uiApp.ActiveUIDocument.Document;
                     parameters = new List<RevitParameter>();
-                    if (revitFamily.Category == "Walls")
+                    if (revitFamily.CategoryId == -2000011)
                     {
                         // do stuff for walls
                         FilteredElementCollector wallCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
@@ -231,7 +242,7 @@ namespace LMNA.Lyrebird
                             }
                         }
                     }
-                    else if (revitFamily.Category == "Floors")
+                    else if (revitFamily.CategoryId == -2000032)
                     {
                         // get parameters for floors
                         FilteredElementCollector floorCollector = new FilteredElementCollector(doc);
@@ -304,7 +315,7 @@ namespace LMNA.Lyrebird
                             }
                         }
                     }
-                    else if (revitFamily.Category == "Roofs")
+                    else if (revitFamily.CategoryId == -2000035)
                     {
                         // get parameters for a roof
                         FilteredElementCollector roofCollector = new FilteredElementCollector(doc);
@@ -554,12 +565,12 @@ namespace LMNA.Lyrebird
                     volumeDUT = fo.DisplayUnits;
 
                     // Find existing elements
-                    List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].Category);
+                    List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId);
                     
                     TaskDialog dlg = new TaskDialog("Warning");
                     dlg.MainInstruction = "Incoming Data";
                     RevitObject existingObj = incomingObjs[0];
-                    bool profileWarning = (existingObj.Category == "Walls" && existingObj.Curves.Count > 1) || existingObj.Category == "Floors" || existingObj.Category == "Roofs";
+                    bool profileWarning = (existingObj.CategoryId == -2000011 && existingObj.Curves.Count > 1) || existingObj.CategoryId == -2000032 || existingObj.CategoryId == -2000035;
                     int option = 0;
                     if (existing == null || existing.Count == 0)
                     {
@@ -1038,8 +1049,8 @@ namespace LMNA.Lyrebird
                 bool typeFound = false;
 
                 FilteredElementCollector famCollector = new FilteredElementCollector(doc);
-                
-                if (ro.Category == "Walls")
+
+                if (ro.CategoryId == -2000011)
                 {
                     famCollector.OfClass(typeof(WallType));
                     foreach (WallType wt in famCollector)
@@ -1052,7 +1063,7 @@ namespace LMNA.Lyrebird
                         }
                     }
                 }
-                else if (ro.Category == "Floors")
+                else if (ro.CategoryId == -2000032)
                 {
                     famCollector.OfClass(typeof(FloorType));
                     foreach (FloorType ft in famCollector)
@@ -1065,7 +1076,7 @@ namespace LMNA.Lyrebird
                         }
                     }
                 }
-                else if (ro.Category == "Roofs")
+                else if (ro.CategoryId == -2000035)
                 {
                     famCollector.OfClass(typeof(RoofType));
                     foreach (RoofType rt in famCollector)
@@ -1134,7 +1145,7 @@ namespace LMNA.Lyrebird
                                         List<LyrebirdPoint> curvePoints = lbc.ControlPoints.OrderBy(p => p.Z).ToList();
                                         // linear
                                         // can be a wall or line based family.
-                                        if (obj.Category == "Walls")
+                                        if (obj.CategoryId == -2000011)
                                         {
                                                 
                                             // draw a wall
@@ -1184,7 +1195,7 @@ namespace LMNA.Lyrebird
                                             }
                                         }
                                         // See if it's a structural column
-                                        else if (obj.Category == "Structural Columns")
+                                        else if (obj.CategoryId == -2001330)
                                         {
                                             if (symbol != null && lbc.CurveType == "Line")
                                             {
@@ -1245,7 +1256,7 @@ namespace LMNA.Lyrebird
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
 
                                                 // Create the family
-                                                if (symbol.Category.Name == "Detail Items")
+                                                if (symbol.Category.Id.IntegerValue == -2002000)
                                                 {
                                                     try
                                                     {
@@ -1257,7 +1268,7 @@ namespace LMNA.Lyrebird
                                                       Debug.WriteLine(ex.Message);
                                                     }
                                                 }
-                                                else if(symbol.Category.Name == "Structural Framing")
+                                                else if (symbol.Category.Id.IntegerValue == -2001320)
                                                 {
                                                     try
                                                     {
@@ -1312,7 +1323,7 @@ namespace LMNA.Lyrebird
                                         //TODO: For each profile type, determine if the offset is working correctly or inverted
 
                                         // Then determine category and create based on that.
-                                        if (obj.Category == "Walls")
+                                        if (obj.CategoryId == -2000011)
                                         {
                                             // Create line based wall
                                             // Find the level
@@ -1402,7 +1413,7 @@ namespace LMNA.Lyrebird
                                             AssignGuid(w, uniqueId, instanceSchema);
 
                                         }
-                                        else if (obj.Category == "Floors")
+                                        else if (obj.CategoryId == -2000032)
                                         {
                                             // Create a profile based floor
                                             // Find the level
@@ -1434,7 +1445,7 @@ namespace LMNA.Lyrebird
                                             AssignGuid(flr, uniqueId, instanceSchema);
                                             
                                         }
-                                        else if (obj.Category == "Roofs")
+                                        else if (obj.CategoryId == -2000035)
                                         {
                                             // Create a RoofExtrusion
                                             // Find the level
@@ -1912,7 +1923,7 @@ namespace LMNA.Lyrebird
 
                 FilteredElementCollector famCollector = new FilteredElementCollector(doc);
 
-                if (ro.Category == "Walls")
+                if (ro.CategoryId == -2000011)
                 {
                     famCollector.OfClass(typeof(WallType));
                     foreach (WallType wt in famCollector)
@@ -1925,7 +1936,7 @@ namespace LMNA.Lyrebird
                         }
                     }
                 }
-                else if (ro.Category == "Floors")
+                else if (ro.CategoryId == -2000032)
                 {
                     famCollector.OfClass(typeof(FloorType));
                     foreach (FloorType ft in famCollector)
@@ -1938,7 +1949,7 @@ namespace LMNA.Lyrebird
                         }
                     }
                 }
-                else if (ro.Category == "Roofs")
+                else if (ro.CategoryId == -2000035)
                 {
                     famCollector.OfClass(typeof(RoofType));
                     foreach (RoofType rt in famCollector)
@@ -1997,7 +2008,7 @@ namespace LMNA.Lyrebird
                                 for (int i = 0; i < existingObjects.Count; i++)
                                 {
                                     RevitObject obj = existingObjects[i];
-                                    if (obj.Category != "Walls" && obj.Category != "Floors" && obj.Category != "Roofs")
+                                    if (obj.CategoryId != -2000011 && obj.CategoryId != -2000032 && obj.CategoryId != -2000035)
                                     {
                                         fi = doc.GetElement(existingElems[i]) as FamilyInstance;
                                         
@@ -2022,7 +2033,7 @@ namespace LMNA.Lyrebird
                                         List<LyrebirdPoint> curvePoints = lbc.ControlPoints.OrderBy(p => p.Z).ToList();
                                         // linear
                                         // can be a wall or line based family.
-                                        if (obj.Category == "Walls")
+                                        if (obj.CategoryId == -2000011)
                                         {
                                             // draw a wall
                                             Curve crv = null;
@@ -2084,7 +2095,7 @@ namespace LMNA.Lyrebird
                                             }
                                         }
                                         // See if it's a structural column
-                                        else if (obj.Category == "Structural Columns")
+                                        else if (obj.CategoryId == -2001330)
                                         {
                                             if (symbol != null && lbc.CurveType == "Line")
                                             {
@@ -2178,7 +2189,7 @@ namespace LMNA.Lyrebird
                                         }
                                         // A list of curves.  These should equate a closed planar curve from GH.
                                         // Determine category and create based on that.
-                                        if (obj.Category == "Walls")
+                                        if (obj.CategoryId == -2000011)
                                         {
                                             // Create line based wall
                                             // Find the level
@@ -2418,7 +2429,7 @@ namespace LMNA.Lyrebird
                                             // Assign the parameters
                                             SetParameters(w, obj.Parameters, doc);
                                         }
-                                        else if (obj.Category == "Floors")
+                                        else if (obj.CategoryId == -2000032)
                                         {
                                             // Create a profile based floor
                                             // Find the level
@@ -2601,7 +2612,7 @@ namespace LMNA.Lyrebird
                                             // Assign the parameters
                                             SetParameters(flr, obj.Parameters, doc);
                                         }
-                                        else if (obj.Category == "Roofs")
+                                        else if (obj.CategoryId == -2000035)
                                         {
                                             // Create a RoofExtrusion
                                             // Find the level
@@ -2807,7 +2818,7 @@ namespace LMNA.Lyrebird
             //return succeeded;
         }
 
-        private List<ElementId> FindExisting(Document doc, Guid uniqueId, string category)
+        private List<ElementId> FindExisting(Document doc, Guid uniqueId, int categoryId)
         {
             // Find existing elements with a matching GUID from the GH component.
             List<ElementId> existingElems = new List<ElementId>();
@@ -2819,7 +2830,7 @@ namespace LMNA.Lyrebird
             }
 
             // find the existing elements
-            if (category == "Walls")
+            if (categoryId == -2000011)
             {
                 FilteredElementCollector collector = new FilteredElementCollector(doc);
                 collector.OfCategory(BuiltInCategory.OST_Walls);
@@ -2845,7 +2856,7 @@ namespace LMNA.Lyrebird
                     }
                 }
             }
-            else if (category == "Floors")
+            else if (categoryId == -2000032)
             {
                 FilteredElementCollector collector = new FilteredElementCollector(doc);
                 collector.OfCategory(BuiltInCategory.OST_Floors);
@@ -2871,7 +2882,7 @@ namespace LMNA.Lyrebird
                     }
                 }
             }
-            else if (category == "Roofs")
+            else if (categoryId == -2000035)
             {
                 FilteredElementCollector collector = new FilteredElementCollector(doc);
                 collector.OfCategory(BuiltInCategory.OST_Roofs);
@@ -3333,9 +3344,44 @@ namespace LMNA.Lyrebird
                             break;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    TaskDialog.Show("Error", ex.Message);
+                    try
+                    {
+                        Parameter p = fi.Symbol.get_Parameter(rp.ParameterName);
+                        switch (rp.StorageType)
+                        {
+                            case "Double":
+                                if (p.Definition.ParameterType == ParameterType.Area)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Volume)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Length)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                                else
+                                    p.Set(Convert.ToDouble(rp.Value));
+                                break;
+                            case "Integer":
+                                p.Set(Convert.ToInt32(rp.Value));
+                                break;
+                            case "String":
+                                p.Set(rp.Value);
+                                break;
+                            case "ElementId":
+                                if (p.Definition.ParameterType == ParameterType.Material)
+                                    p.Set(GetMaterial(rp.Value, doc));
+                                else
+                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                break;
+                            default:
+                                p.Set(rp.Value);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.Message);
+                    }
                 }
             }
         }
@@ -3376,9 +3422,44 @@ namespace LMNA.Lyrebird
                             break;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    TaskDialog.Show("Error", ex.Message);
+                    try
+                    {
+                        Parameter p = wall.WallType.get_Parameter(rp.ParameterName);
+                        switch (rp.StorageType)
+                        {
+                            case "Double":
+                                if (p.Definition.ParameterType == ParameterType.Area)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Volume)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Length)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                                else
+                                    p.Set(Convert.ToDouble(rp.Value));
+                                break;
+                            case "Integer":
+                                p.Set(Convert.ToInt32(rp.Value));
+                                break;
+                            case "String":
+                                p.Set(rp.Value);
+                                break;
+                            case "ElementId":
+                                if (p.Definition.ParameterType == ParameterType.Material)
+                                    p.Set(GetMaterial(rp.Value, doc));
+                                else
+                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                break;
+                            default:
+                                p.Set(rp.Value);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.Message);
+                    }
                 }
             }
         }
@@ -3419,9 +3500,44 @@ namespace LMNA.Lyrebird
                             break;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    TaskDialog.Show("Error", ex.Message);
+                    try
+                    {
+                        Parameter p = floor.FloorType.get_Parameter(rp.ParameterName);
+                        switch (rp.StorageType)
+                        {
+                            case "Double":
+                                if (p.Definition.ParameterType == ParameterType.Area)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Volume)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Length)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                                else
+                                    p.Set(Convert.ToDouble(rp.Value));
+                                break;
+                            case "Integer":
+                                p.Set(Convert.ToInt32(rp.Value));
+                                break;
+                            case "String":
+                                p.Set(rp.Value);
+                                break;
+                            case "ElementId":
+                                if (p.Definition.ParameterType == ParameterType.Material)
+                                    p.Set(GetMaterial(rp.Value, doc));
+                                else
+                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                break;
+                            default:
+                                p.Set(rp.Value);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.Message);
+                    }
                 }
             }
         }
@@ -3462,9 +3578,44 @@ namespace LMNA.Lyrebird
                             break;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    TaskDialog.Show("Error", ex.Message);
+                    try
+                    {
+                        Parameter p = roof.RoofType.get_Parameter(rp.ParameterName);
+                        switch (rp.StorageType)
+                        {
+                            case "Double":
+                                if (p.Definition.ParameterType == ParameterType.Area)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Volume)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Length)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                                else
+                                    p.Set(Convert.ToDouble(rp.Value));
+                                break;
+                            case "Integer":
+                                p.Set(Convert.ToInt32(rp.Value));
+                                break;
+                            case "String":
+                                p.Set(rp.Value);
+                                break;
+                            case "ElementId":
+                                if (p.Definition.ParameterType == ParameterType.Material)
+                                    p.Set(GetMaterial(rp.Value, doc));
+                                else
+                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                break;
+                            default:
+                                p.Set(rp.Value);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.Message);
+                    }
                 }
             }
         }
