@@ -81,6 +81,7 @@ namespace LMNA.Lyrebird.GH
         private string familyName = "Not Selected";
         private string typeName = "Not Selected";
         private string category = "Not Selected";
+        private int categoryId = -1;
         private List<LyrebirdId> uniqueIDs = new List<LyrebirdId>();
         int appVersion = 1;
 
@@ -110,6 +111,12 @@ namespace LMNA.Lyrebird.GH
         {
             get { return category; }
             set { category = value; }
+        }
+
+        public int CategoryId
+        {
+            get { return categoryId; }
+            set { categoryId = value; }
         }
 
         public List<LyrebirdId> UniqueIds
@@ -198,31 +205,41 @@ namespace LMNA.Lyrebird.GH
                         if (origPoints != null && origPoints.Branches.Count > 0)
                         {
                             List<RevitObject> tempObjs = new List<RevitObject>();
-
-                            for (int i = 0; i < origPoints.Branches.Count; i++)
+                            // make sure the branches match the datacount
+                            if (origPoints.Branches.Count == origPoints.DataCount)
                             {
-                                GH_Point ghpt = origPoints[i][0];
-                                LyrebirdPoint point = new LyrebirdPoint
+                                for (int i = 0; i < origPoints.Branches.Count; i++)
                                 {
-                                    X = ghpt.Value.X,
-                                    Y = ghpt.Value.Y,
-                                    Z = ghpt.Value.Z
-                                };
+                                    GH_Point ghpt = origPoints[i][0];
+                                    LyrebirdPoint point = new LyrebirdPoint
+                                    {
+                                        X = ghpt.Value.X,
+                                        Y = ghpt.Value.Y,
+                                        Z = ghpt.Value.Z
+                                    };
 
-                                RevitObject ro = new RevitObject
-                                {
-                                    Origin = point,
-                                    FamilyName = familyName,
-                                    TypeName = typeName,
-                                    Category = category,
-                                    GHPath = origPoints.Paths[i].ToString(),
-                                    GHScaleFactor = scale.ScaleFactor,
-                                    GHScaleName = scale.ScaleName
-                                };
-                              
-                                tempObjs.Add(ro);
+                                    RevitObject ro = new RevitObject
+                                    {
+                                        Origin = point,
+                                        FamilyName = familyName,
+                                        TypeName = typeName,
+                                        Category = category,
+                                        CategoryId = categoryId,
+                                        GHPath = origPoints.Paths[i].ToString(),
+                                        GHScaleFactor = scale.ScaleFactor,
+                                        GHScaleName = scale.ScaleName
+                                    };
+
+                                    tempObjs.Add(ro);
+                                }
+                                obj = tempObjs;
                             }
-                            obj = tempObjs;
+                            else
+                            {
+                                // Inform the user they need to graft their inputs.  Only one point per branch
+                                System.Windows.Forms.MessageBox.Show("Warning:\n\nEach Branch represents an object, " +
+                                    "so origin point based elements should be grafted so that each point is on it's own branch.");
+                            }
                         }
                         #endregion
 
@@ -245,6 +262,7 @@ namespace LMNA.Lyrebird.GH
                                 ro.TypeName = typeName;
                                 ro.Origin = null;
                                 ro.Category = category;
+                                ro.CategoryId = categoryId;
                                 ro.GHPath = adaptPoints.Paths[i].ToString();
                                 ro.GHScaleFactor = scale.ScaleFactor;
                                 ro.GHScaleName = scale.ScaleName;
@@ -287,6 +305,7 @@ namespace LMNA.Lyrebird.GH
                                             ro.Curves = lbCurves;
                                             ro.FamilyName = familyName;
                                             ro.Category = category;
+                                            ro.CategoryId = categoryId;
                                             ro.TypeName = typeName;
                                             ro.Origin = null;
                                             ro.GHPath = curves.Paths[i].ToString();
@@ -322,11 +341,12 @@ namespace LMNA.Lyrebird.GH
                                             LyrebirdCurve lbc = GetLBCurve(ghc);
                                             List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve>();
                                             lbcurves.Add(lbc);
-                                            
+
                                             RevitObject ro = new RevitObject();
                                             ro.Curves = lbcurves;
                                             ro.FamilyName = familyName;
                                             ro.Category = category;
+                                            ro.CategoryId = categoryId;
                                             ro.TypeName = typeName;
                                             ro.Origin = null;
                                             ro.GHPath = curves.Paths[i].ToString();
@@ -337,6 +357,12 @@ namespace LMNA.Lyrebird.GH
                                     }
                                     obj = tempObjs;
                                 }
+                            }
+                            else
+                            {
+                                // Inform the user they need to graft their inputs.  Only one curve per branch
+                                System.Windows.Forms.MessageBox.Show("Warning:\n\nEach Branch represents an object, " + 
+                                    "so curve based elements should be grafted so that each curve is on it's own branch.");
                             }
                         }
                         #endregion
@@ -645,6 +671,7 @@ namespace LMNA.Lyrebird.GH
             writer.SetString("FamilyName", FamilyName);
             writer.SetString("TypeName", TypeName);
             writer.SetString("Category", Category);
+            writer.SetInt32("CategoryId", CategoryId);
             for (int i = 0; i < inputParameters.Count; i++)
             {
                 try
@@ -667,6 +694,7 @@ namespace LMNA.Lyrebird.GH
             FamilyName = reader.GetString("FamilyName");
             TypeName = reader.GetString("TypeName");
             Category = reader.GetString("Category");
+            CategoryId = reader.GetInt32("CategoryId");
             bool test = true;
             int i = 0;
             List<RevitParameter> parameters = new List<RevitParameter>();

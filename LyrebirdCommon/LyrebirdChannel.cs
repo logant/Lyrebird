@@ -86,7 +86,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                 catch
                 {
                     List<RevitObject> errors = new List<RevitObject>();
-                    errors.Add(new RevitObject("Error", "Error"));
+                    errors.Add(new RevitObject("Error", -1, "Error"));
                     return errors;
                 }
             }
