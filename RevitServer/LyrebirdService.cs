@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.ServiceModel;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using Autodesk.Revit;
+using System.Diagnostics;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using LMNA.Lyrebird.LyrebirdCommon;
 using Autodesk.Revit.DB.ExtensibleStorage;
-using System.Diagnostics;
+using LMNA.Lyrebird.LyrebirdCommon;
+
 
 namespace LMNA.Lyrebird
 {
@@ -22,13 +20,13 @@ namespace LMNA.Lyrebird
         private List<RevitObject> familyNames = new List<RevitObject>();
         private List<string> typeNames = new List<string>();
         private List<RevitParameter> parameters = new List<RevitParameter>();
-        private List<LyrebirdId> uniqueIds = new List<LyrebirdId>();
+        //private List<LyrebirdId> uniqueIds = new List<LyrebirdId>();
 
         DisplayUnitType lengthDUT;
         DisplayUnitType areaDUT;
         DisplayUnitType volumeDUT;
 
-        FamilyInstance hostFinder = null;
+        FamilyInstance hostFinder;
 
         private readonly Guid instanceSchemaGUID = new Guid("9ab787e0-1660-40b7-9453-94e1043b58db");
 
@@ -43,7 +41,7 @@ namespace LMNA.Lyrebird
             {
                 try
                 {
-                    UIApplication uiApp = LMNA.Lyrebird.RevitServerApp.UIApp;
+                    UIApplication uiApp = RevitServerApp.UIApp;
                     familyNames = new List<RevitObject>();
 
                     // Get all standard wall families
@@ -60,8 +58,12 @@ namespace LMNA.Lyrebird
                     FilteredElementCollector wallTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     wallTypeCollector.OfClass(typeof(WallType));
                     WallType wt = wallTypeCollector.FirstElement() as WallType;
-                    RevitObject wallObj = new RevitObject(wt.Category.Name, wt.Category.Id.IntegerValue, wt.Category.Name);
-                    families.Add(wallObj);
+                    if (wt != null)
+                    {
+                        RevitObject wallObj = new RevitObject(wt.Category.Name, wt.Category.Id.IntegerValue, wt.Category.Name);
+                        families.Add(wallObj);
+                    }
+                    
                     //RevitObject curtainObj = new RevitObject("Walls", "Curtain Wall");
                     //families.Add(curtainObj);
                     //RevitObject stackedObj = new RevitObject("Walls", "Stacked Wall");
@@ -70,14 +72,20 @@ namespace LMNA.Lyrebird
                     FilteredElementCollector floorTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     floorTypeCollector.OfClass(typeof(FloorType));
                     FloorType ft = floorTypeCollector.FirstElement() as FloorType;
-                    RevitObject floorObj = new RevitObject(ft.Category.Name, ft.Category.Id.IntegerValue, ft.Category.Name);
-                    families.Add(floorObj);
+                    if (ft != null)
+                    {
+                        RevitObject floorObj = new RevitObject(ft.Category.Name, ft.Category.Id.IntegerValue, ft.Category.Name);
+                        families.Add(floorObj);
+                    }
 
                     FilteredElementCollector roofTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     roofTypeCollector.OfClass(typeof(RoofType));
                     RoofType rt = roofTypeCollector.FirstElement() as  RoofType;
-                    RevitObject roofObj = new RevitObject(rt.Category.Name, rt.Category.Id.IntegerValue, rt.Category.Name);
-                    families.Add(roofObj);
+                    if (rt != null)
+                    {
+                        RevitObject roofObj = new RevitObject(rt.Category.Name, rt.Category.Id.IntegerValue, rt.Category.Name);
+                        families.Add(roofObj);
+                    }
 
                     families.Sort((x, y) => String.CompareOrdinal(x.FamilyName, y.FamilyName));
                     familyNames = families;
@@ -98,7 +106,7 @@ namespace LMNA.Lyrebird
             {
                 try
                 {
-                    UIApplication uiApp = LMNA.Lyrebird.RevitServerApp.UIApp;
+                    UIApplication uiApp = RevitServerApp.UIApp;
                     var doc = uiApp.ActiveUIDocument.Document;
                     typeNames = new List<string>();
                     List<string> types = new List<string>();
@@ -224,18 +232,23 @@ namespace LMNA.Lyrebird
                                 instParameters.Sort((x, y) => String.CompareOrdinal(x.Definition.Name, y.Definition.Name));
                                 foreach (Parameter p in typeParams)
                                 {
-                                    RevitParameter rp = new RevitParameter();
-                                    rp.ParameterName = p.Definition.Name;
-                                    rp.StorageType = p.StorageType.ToString();
-                                    rp.IsType = true;
-                                    parameters.Add(rp);
+                                    RevitParameter rp = new RevitParameter
+                                    {
+                                        ParameterName = p.Definition.Name,
+                                        StorageType = p.StorageType.ToString(),
+                                        IsType = true
+                                    };
+                                  parameters.Add(rp);
                                 }
                                 foreach (Parameter p in instParameters)
                                 {
-                                    RevitParameter rp = new RevitParameter();
-                                    rp.ParameterName = p.Definition.Name;
-                                    rp.StorageType = p.StorageType.ToString();
-                                    rp.IsType = false;
+                                    RevitParameter rp = new RevitParameter
+                                    {
+                                        ParameterName = p.Definition.Name,
+                                        StorageType = p.StorageType.ToString(),
+                                        IsType = false
+                                    };
+                                  
                                     parameters.Add(rp);
                                 }
                                 break;
@@ -287,9 +300,7 @@ namespace LMNA.Lyrebird
                                     if (floor != null)
                                     {
                                         foreach (Parameter p in floor.Parameters)
-                                        {
                                             instParameters.Add(p);
-                                        }
                                     }
                                     t.RollBack();
                                 }
@@ -297,18 +308,24 @@ namespace LMNA.Lyrebird
                                 instParameters.Sort((x, y) => String.CompareOrdinal(x.Definition.Name, y.Definition.Name));
                                 foreach (Parameter p in typeParams)
                                 {
-                                    RevitParameter rp = new RevitParameter();
-                                    rp.ParameterName = p.Definition.Name;
-                                    rp.StorageType = p.StorageType.ToString();
-                                    rp.IsType = true;
+                                    RevitParameter rp = new RevitParameter
+                                    {
+                                        ParameterName = p.Definition.Name,
+                                        StorageType = p.StorageType.ToString(),
+                                        IsType = true
+                                    };
+                                  
                                     parameters.Add(rp);
                                 }
                                 foreach (Parameter p in instParameters)
                                 {
-                                    RevitParameter rp = new RevitParameter();
-                                    rp.ParameterName = p.Definition.Name;
-                                    rp.StorageType = p.StorageType.ToString();
-                                    rp.IsType = false;
+                                    RevitParameter rp = new RevitParameter
+                                    {
+                                        ParameterName = p.Definition.Name,
+                                        StorageType = p.StorageType.ToString(),
+                                        IsType = false
+                                    };
+                                  
                                     parameters.Add(rp);
                                 }
                                 break;
@@ -372,18 +389,24 @@ namespace LMNA.Lyrebird
                                 instParameters.Sort((x, y) => String.CompareOrdinal(x.Definition.Name, y.Definition.Name));
                                 foreach (Parameter p in typeParams)
                                 {
-                                    RevitParameter rp = new RevitParameter();
-                                    rp.ParameterName = p.Definition.Name;
-                                    rp.StorageType = p.StorageType.ToString();
-                                    rp.IsType = true;
+                                    RevitParameter rp = new RevitParameter
+                                    {
+                                        ParameterName = p.Definition.Name,
+                                        StorageType = p.StorageType.ToString(),
+                                        IsType = true
+                                    };
+                                    
                                     parameters.Add(rp);
                                 }
                                 foreach (Parameter p in instParameters)
                                 {
-                                    RevitParameter rp = new RevitParameter();
-                                    rp.ParameterName = p.Definition.Name;
-                                    rp.StorageType = p.StorageType.ToString();
-                                    rp.IsType = false;
+                                    RevitParameter rp = new RevitParameter
+                                    {
+                                        ParameterName = p.Definition.Name,
+                                        StorageType = p.StorageType.ToString(),
+                                        IsType = false
+                                    };
+                                  
                                     parameters.Add(rp);
                                 }
                                 break;
@@ -446,7 +469,7 @@ namespace LMNA.Lyrebird
                                                 }
                                                 else
                                                 {
-                                                    // regular creation.  SOme parameters will be missing
+                                                    // regular creation.  Some parameters will be missing
                                                     fi = doc.Create.NewFamilyInstance(XYZ.Zero, fs, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
                                                 }
                                                 //fi = doc.Create.NewFamilyInstance(origin, fs, host, level, false)
@@ -523,18 +546,24 @@ namespace LMNA.Lyrebird
                                         instanceParams.Sort((x, y) => String.CompareOrdinal(x.Definition.Name, y.Definition.Name));
                                         foreach (Parameter p in typeParams)
                                         {
-                                            RevitParameter rp = new RevitParameter();
-                                            rp.ParameterName = p.Definition.Name;
-                                            rp.StorageType = p.StorageType.ToString();
-                                            rp.IsType = true;
+                                            RevitParameter rp = new RevitParameter
+                                            {
+                                                ParameterName = p.Definition.Name,
+                                                StorageType = p.StorageType.ToString(),
+                                                IsType = true
+                                            };
+                                            
                                             parameters.Add(rp);
                                         }
                                         foreach (Parameter p in instanceParams)
                                         {
-                                            RevitParameter rp = new RevitParameter();
-                                            rp.ParameterName = p.Definition.Name;
-                                            rp.StorageType = p.StorageType.ToString();
-                                            rp.IsType = false;
+                                            RevitParameter rp = new RevitParameter
+                                            {
+                                                ParameterName = p.Definition.Name,
+                                                StorageType = p.StorageType.ToString(),
+                                                IsType = false
+                                            };
+                                          
                                             parameters.Add(rp);
                                         }
                                     }
@@ -567,8 +596,7 @@ namespace LMNA.Lyrebird
                     // Find existing elements
                     List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId);
                     
-                    TaskDialog dlg = new TaskDialog("Warning");
-                    dlg.MainInstruction = "Incoming Data";
+                    TaskDialog dlg = new TaskDialog("Warning") { MainInstruction = "Incoming Data" };
                     RevitObject existingObj = incomingObjs[0];
                     bool profileWarning = (existingObj.CategoryId == -2000011 && existingObj.Curves.Count > 1) || existingObj.CategoryId == -2000032 || existingObj.CategoryId == -2000035;
                     int option = 0;
@@ -727,7 +755,7 @@ namespace LMNA.Lyrebird
                         {
                             // Modify and ignore
                             List<RevitObject> existingObjects = new List<RevitObject>();
-                            List<ElementId> removeObjects = new List<ElementId>();
+                            //List<ElementId> removeObjects = new List<ElementId>();
 
                             int i = 0;
                             while (i < incomingObjs.Count)
@@ -780,12 +808,10 @@ namespace LMNA.Lyrebird
         {
             lock (_locker)
             {
-                UIApplication uiapp = LMNA.Lyrebird.RevitServerApp.UIApp;
+                UIApplication uiapp = RevitServerApp.UIApp;
                 try
                 {
-                    string docName = "Not finished";
-                    docName = uiapp.ActiveUIDocument.Document.Title;
-                    currentDocName = docName;
+                    currentDocName = uiapp.ActiveUIDocument.Document.Title;
                 }
                 catch
                 {
@@ -799,7 +825,7 @@ namespace LMNA.Lyrebird
         private void CreateObjects(List<RevitObject> revitObjects, Document doc, Guid uniqueId)
         {
             // Create new Revit objects.
-            List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
+            //List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
             
             // Get the levels from the project
             FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
@@ -890,8 +916,7 @@ namespace LMNA.Lyrebird
                                     origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
                                     
                                     // Find the level
-                                    List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint>();
-                                    lbPoints.Add(obj.Origin);
+                                    List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint> { obj.Origin };
                                     Level lvl = GetLevel(lbPoints, doc);
 
                                     // Get the host
@@ -1199,10 +1224,9 @@ namespace LMNA.Lyrebird
                                         {
                                             if (symbol != null && lbc.CurveType == "Line")
                                             {
-                                                Curve crv = null;
                                                 XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
                                                 XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
-                                                crv = Line.CreateBound(origin, pt2);
+                                                Curve crv = Line.CreateBound(origin, pt2);
 
                                                 // Find the level
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
@@ -1327,7 +1351,6 @@ namespace LMNA.Lyrebird
                                         {
                                             // Create line based wall
                                             // Find the level
-                                            Level lvl = null;
                                             double offset = 0;
                                             List<LyrebirdPoint> allPoints = new List<LyrebirdPoint>();
                                             foreach (LyrebirdCurve lc in obj.Curves)
@@ -1339,7 +1362,7 @@ namespace LMNA.Lyrebird
                                             }
                                             allPoints.Sort((x, y) => x.Z.CompareTo(y.Z));
 
-                                            lvl = GetLevel(allPoints, doc);
+                                            Level lvl = GetLevel(allPoints, doc);
                                             
                                             if (Math.Abs(UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
                                             {
@@ -1350,9 +1373,8 @@ namespace LMNA.Lyrebird
                                             List<Curve> crvArray = new List<Curve>();
                                             try
                                             {
-                                                for (int i = 0; i < obj.Curves.Count; i++)
+                                                foreach (LyrebirdCurve lbc in obj.Curves)
                                                 {
-                                                    LyrebirdCurve lbc = obj.Curves[i];
                                                     if (lbc.CurveType == "Arc")
                                                     {
                                                         XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
@@ -1374,22 +1396,21 @@ namespace LMNA.Lyrebird
                                                         List<double> weights = lbc.Weights;
                                                         List<double> knots = lbc.Knots;
 
+                                                    
                                                         foreach (LyrebirdPoint lp in lbc.ControlPoints)
                                                         {
                                                             XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
                                                             controlPoints.Add(pt);
                                                         }
+                                                    
                                                         NurbSpline spline;
                                                         if (lbc.Degree < 3)
-                                                        {
                                                             spline = NurbSpline.Create(controlPoints, weights);
-                                                        }
                                                         else
-                                                        {
                                                             spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
-                                                        }
+                                                    
                                                         crvArray.Add(spline);
-                                                    }
+                                                    } 
                                                 }
                                             }
                                             catch (Exception ex)
@@ -1398,8 +1419,7 @@ namespace LMNA.Lyrebird
                                             }
 
                                             // Create the floor
-                                            Wall w = null;
-                                            w = Wall.Create(doc, crvArray, wallType.Id, lvl.Id, false);
+                                            Wall w = Wall.Create(doc, crvArray, wallType.Id, lvl.Id, false);
                                             if (Math.Abs(offset - 0) > double.Epsilon)
                                             {
                                                 Parameter p = w.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
@@ -1429,8 +1449,7 @@ namespace LMNA.Lyrebird
                                             CurveArray crvArray = GetCurveArray(obj.Curves);
                                             
                                             // Create the floor
-                                            Floor flr = null;
-                                            flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+                                            Floor flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
                                             
                                             if (Math.Abs(offset - 0) > double.Epsilon)
                                             {
@@ -1508,7 +1527,7 @@ namespace LMNA.Lyrebird
         private void ModifyObjects(List<RevitObject> existingObjects, List<ElementId> existingElems, Document doc, Guid uniqueId, bool profileWarning)
         {
             // Create new Revit objects.
-            List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
+            //List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
 
             // Determine what kind of object we're creating.
             RevitObject ro = existingObjects[0];
@@ -1527,7 +1546,7 @@ namespace LMNA.Lyrebird
                     Parameter hostParam = fam.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
                     int hostBehavior = hostParam.AsInteger();
 
-                    FamilyInstance existingInstance = doc.GetElement(existingElems[0]) as FamilyInstance;
+                    //FamilyInstance existingInstance = doc.GetElement(existingElems[0]) as FamilyInstance;
                     
                     using (Transaction t = new Transaction(doc, "Lyrebird Modify Objects"))
                     {
@@ -1568,7 +1587,7 @@ namespace LMNA.Lyrebird
                                     fi = doc.GetElement(existingElems[i]) as FamilyInstance;
 
                                     // Change the family and symbol if necessary
-                                    if (fi.Symbol.Family.Name != symbol.Family.Name || fi.Symbol.Name != symbol.Name)
+                                    if (fi != null && (fi.Symbol.Family.Name != symbol.Family.Name || fi.Symbol.Name != symbol.Name))
                                     {
                                         try
                                         {
@@ -1584,10 +1603,16 @@ namespace LMNA.Lyrebird
                                     {
                                         // Move family
                                         origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
-                                        LocationPoint lp = fi.Location as LocationPoint;
-                                        XYZ oldLoc = lp.Point;
-                                        XYZ translation = origin.Subtract(oldLoc);
-                                        ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                        if (fi != null)
+                                        {
+                                            LocationPoint lp = fi.Location as LocationPoint;
+                                            if (lp != null)
+                                            {
+                                                XYZ oldLoc = lp.Point;
+                                                XYZ translation = origin.Subtract(oldLoc);
+                                                ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                            }
+                                        }
                                     }
                                     catch (Exception ex)
                                     {
@@ -1600,9 +1625,15 @@ namespace LMNA.Lyrebird
                                         if (Math.Abs(obj.Orientation.Z - 0) < double.Epsilon)
                                         {
                                             Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
-                                            LocationPoint lp = fi.Location as LocationPoint;
-                                            double angle = Math.Atan2(obj.Orientation.Y, obj.Orientation.X) - lp.Rotation;
-                                            ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
+                                            if (fi != null)
+                                            {
+                                                LocationPoint lp = fi.Location as LocationPoint;
+                                                if (lp != null)
+                                                {
+                                                    double angle = Math.Atan2(obj.Orientation.Y, obj.Orientation.X) - lp.Rotation;
+                                                    ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
+                                                }
+                                            }
                                         }
                                     }
 
@@ -1633,8 +1664,7 @@ namespace LMNA.Lyrebird
                                     origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
 
                                     // Find the level
-                                    List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint>();
-                                    lbPoints.Add(obj.Origin);
+                                    List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint> {obj.Origin};
                                     Level lvl = GetLevel(lbPoints, doc);
 
                                     // Get the host
@@ -1659,9 +1689,12 @@ namespace LMNA.Lyrebird
                                                 //fi = doc.Create.NewFamilyInstance(face, origin, faceVector, symbol);
                                                 // Just move the host and update the parameters as needed.
                                                 LocationPoint lp = fi.Location as LocationPoint;
-                                                XYZ oldLoc = lp.Point;
-                                                XYZ translation = origin.Subtract(oldLoc);
-                                                ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                                if (lp != null)
+                                                {
+                                                    XYZ oldLoc = lp.Point;
+                                                    XYZ translation = origin.Subtract(oldLoc);
+                                                    ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                                }
 
                                                 SetParameters(fi, obj.Parameters, doc);
                                             }
@@ -1770,9 +1803,12 @@ namespace LMNA.Lyrebird
                                             {
                                                 // Just move the host and update the parameters as needed.
                                                 LocationPoint lp = fi.Location as LocationPoint;
-                                                XYZ oldLoc = lp.Point;
-                                                XYZ translation = origin.Subtract(oldLoc);
-                                                ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                                if (lp != null)
+                                                {
+                                                    XYZ oldLoc = lp.Point;
+                                                    XYZ translation = origin.Subtract(oldLoc);
+                                                    ElementTransformUtils.MoveElement(doc, fi.Id, translation);
+                                                }
 
                                                 SetParameters(fi, obj.Parameters, doc);
                                             }
@@ -2105,7 +2141,7 @@ namespace LMNA.Lyrebird
                                                 crv = Line.CreateBound(origin, pt2);
 
                                                 // Find the level
-                                                Level lvl = GetLevel(lbc.ControlPoints, doc);
+                                                //Level lvl = GetLevel(lbc.ControlPoints, doc);
 
                                                 // Create the column
                                                 //fi = doc.Create.NewFamilyInstance(origin, symbol, lvl, Autodesk.Revit.DB.Structure.StructuralType.Column);
@@ -2172,11 +2208,15 @@ namespace LMNA.Lyrebird
                                         bool replace = false;
                                         if (profileWarning)
                                         {
-                                            TaskDialog warningDlg = new TaskDialog("Warning");
-                                            warningDlg.MainInstruction = "Profile based Elements warning";
-                                            warningDlg.MainContent = "Elements that require updates to a profile sketch may not be updated if the number of curves in the sketch differs from the incoming curves." +
-                                                "  In such cases the element and will be deleted and replaced with new elements." +
-                                                "  Doing so will cause the loss of any elements hosted to the original instance. How would you like to proceed";
+                                            TaskDialog warningDlg = new TaskDialog("Warning")
+                                            {
+                                                MainInstruction = "Profile based Elements warning",
+                                                MainContent =
+                                                  "Elements that require updates to a profile sketch may not be updated if the number of curves in the sketch differs from the incoming curves." +
+                                                  "  In such cases the element and will be deleted and replaced with new elements." +
+                                                  "  Doing so will cause the loss of any elements hosted to the original instance. How would you like to proceed"
+                                            };
+                                          
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Replace the existing elements, understanding hosted elements may be lost");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Only updated parameter information and not profile or location information");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
@@ -2216,9 +2256,8 @@ namespace LMNA.Lyrebird
                                             List<Curve> crvArray = new List<Curve>();
                                             try
                                             {
-                                                for (int j = 0; j < obj.Curves.Count; j++)
+                                                foreach (LyrebirdCurve lbc in obj.Curves)
                                                 {
-                                                    LyrebirdCurve lbc = obj.Curves[j];
                                                     if (lbc.CurveType == "Arc")
                                                     {
                                                         XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
@@ -2245,15 +2284,13 @@ namespace LMNA.Lyrebird
                                                             XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
                                                             controlPoints.Add(pt);
                                                         }
+                                                      
                                                         NurbSpline spline;
                                                         if (lbc.Degree < 3)
-                                                        {
                                                             spline = NurbSpline.Create(controlPoints, weights);
-                                                        }
                                                         else
-                                                        {
                                                             spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
-                                                        }
+
                                                         crvArray.Add(spline);
                                                     }
                                                 }
@@ -2974,13 +3011,12 @@ namespace LMNA.Lyrebird
             return null;
         }
 
-        private CurveArray GetCurveArray(List<LyrebirdCurve> curves)
+        private CurveArray GetCurveArray(IEnumerable<LyrebirdCurve> curves)
         {
             CurveArray crvArray = new CurveArray();
 
-            for (int i = 0; i < curves.Count; i++)
+            foreach (LyrebirdCurve lbc in curves)
             {
-                LyrebirdCurve lbc = curves[i];
                 if (lbc.CurveType == "Arc")
                 {
                     XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
@@ -3067,7 +3103,7 @@ namespace LMNA.Lyrebird
                     if (!System.IO.File.Exists(path))
                     {
                         // save the file from this assembly and load it into project
-                        string directory = System.IO.Path.GetDirectoryName(path);
+                        //string directory = System.IO.Path.GetDirectoryName(path);
                         System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
                         WriteResource(assembly, "IntersectionPoint.rfa", path);
                     }
@@ -3190,8 +3226,7 @@ namespace LMNA.Lyrebird
             FilteredElementCollector elementCollector = new FilteredElementCollector(doc);
             elementCollector.WhereElementIsNotElementType();
 
-            Options opt = new Options();
-            opt.ComputeReferences = true;
+            Options opt = new Options { ComputeReferences = true };
             foreach (Element e in elementCollector)
             {
                 try
@@ -3212,28 +3247,29 @@ namespace LMNA.Lyrebird
                                 GeometryElement instGeometry = geoInst.GetInstanceGeometry();
                                 foreach (GeometryObject o in instGeometry)
                                 {
-                                    Solid s = o as Solid;
+                                  Solid s = o as Solid;
+                                  if (s != null)
                                     foreach (Face f in s.Faces)
                                     {
-                                        IntersectionResultArray results;
-                                        SetComparisonResult result = f.Intersect(c, out results);
-                                        if (results != null)
+                                      IntersectionResultArray results;
+                                      SetComparisonResult result = f.Intersect(c, out results);
+                                      if (results != null)
+                                      {
+                                        foreach (IntersectionResult res in results)
                                         {
-                                            foreach (IntersectionResult res in results)
+                                          XYZ intersect = res.XYZPoint;
+                                          double tempDist = location.DistanceTo(intersect);
+                                          if (tempDist < dist)
+                                          {
+                                            dist = tempDist;
+                                            face = f;
+                                            if (dist < 0.05)
                                             {
-                                                XYZ intersect = res.XYZPoint;
-                                                double tempDist = location.DistanceTo(intersect);
-                                                if (tempDist < dist)
-                                                {
-                                                    dist = tempDist;
-                                                    face = f;
-                                                    if (dist < 0.05)
-                                                    {
-                                                        return f;
-                                                    }
-                                                }
+                                              return f;
                                             }
+                                          }
                                         }
+                                      }
                                     }
                                 }
                             }
@@ -3334,11 +3370,10 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            if (p.Definition.ParameterType == ParameterType.Material)
-                                p.Set(GetMaterial(rp.Value, doc));
-                            else
-                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
-                            break;
+                            p.Set(p.Definition.ParameterType == ParameterType.Material
+                                ? GetMaterial(rp.Value, doc)
+                                : new ElementId(Convert.ToInt32(rp.Value)));
+                        break;
                         default:
                             p.Set(rp.Value);
                             break;
@@ -3647,13 +3682,7 @@ namespace LMNA.Lyrebird
                 }
             }
 
-            if (eid == null)
-            {
-                // try creating material
-                eid = Material.Create(doc, value);
-            }
-
-            return eid;
+            return eid ?? (eid = Material.Create(doc, value));
         }
         
         #endregion

@@ -3,13 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-
-using GH_IO;
 using Grasshopper;
-using Grasshopper.GUI;
 using Grasshopper.Kernel;
-using System.ServiceModel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 
@@ -33,16 +28,6 @@ namespace LMNA.Lyrebird.GH
 
     public class LyrebirdInfo : GH_AssemblyInfo
     {
-        public override string Description
-        {
-            get { return base.Description; }
-        }
-
-        public override string Name
-        {
-            get { return base.Name; }
-        }
-
         public override string Version
         {
             get { return "1.1.0.0"; }
@@ -69,7 +54,7 @@ namespace LMNA.Lyrebird.GH
 
         public override Grasshopper.GUI.Canvas.GH_ObjectResponse RespondToMouseDoubleClick(Grasshopper.GUI.Canvas.GH_Canvas sender, Grasshopper.GUI.GH_CanvasMouseEvent e)
         {
-            ((GHClient)this.Owner).DisplayForm();
+            ((GHClient)Owner).DisplayForm();
             return Grasshopper.GUI.Canvas.GH_ObjectResponse.Handled;
         }
     }
@@ -87,7 +72,7 @@ namespace LMNA.Lyrebird.GH
 
         bool paramNamesEnabled = true;
 
-        private string[] m_settings;
+        //private string[] m_settings;
 
         public List<RevitParameter> InputParams
         {
@@ -107,7 +92,7 @@ namespace LMNA.Lyrebird.GH
             set { typeName = value; }
         }
 
-        public string Category
+        public new string Category
         {
             get { return category; }
             set { category = value; }
@@ -130,7 +115,7 @@ namespace LMNA.Lyrebird.GH
         {
         }
 
-        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddBooleanParameter("Trigger", "T", "Trigger to stream the data from Grasshopper to another application.", GH_ParamAccess.item, false);
             pManager.AddIntegerParameter("Application", "A", "Application that will receive the data.", GH_ParamAccess.item, 1);
@@ -153,7 +138,7 @@ namespace LMNA.Lyrebird.GH
             }
         }
 
-        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
             pManager.AddTextParameter("Msg", "Msg", "Temporary message", GH_ParamAccess.item);
             pManager.AddTextParameter("Guid", "G", "Guids for this component instance GH", GH_ParamAccess.item);
@@ -183,7 +168,7 @@ namespace LMNA.Lyrebird.GH
             {
                 System.Windows.MessageBox.Show("Please select a family/type by double-clicking on the component before running the command.");
             }
-            else if (runCommand == true)
+            else if (runCommand)
             {
                 // Get the scale
                 GHInfo ghi = new GHInfo();
@@ -289,16 +274,16 @@ namespace LMNA.Lyrebird.GH
                                     List<RevitObject> tempObjs = new List<RevitObject>();
                                     for (int i = 0; i < curves.Branches.Count; i++)
                                     {
-                                        Rhino.Geometry.Curve crv = curves[i][0].Value;
+                                        //Rhino.Geometry.Curve crv = curves[i][0].Value;
                                         List<Rhino.Geometry.Curve> rCurves = new List<Rhino.Geometry.Curve>();
-                                        bool getCrvs = CurveSegments(rCurves, crv, true);
+                                        //bool getCrvs = CurveSegments(rCurves, crv, true);
                                         if (rCurves.Count > 0)
                                         {
                                             RevitObject ro = new RevitObject();
                                             List<LyrebirdCurve> lbCurves = new List<LyrebirdCurve>();
                                             for (int j = 0; j < rCurves.Count; j++)
                                             {
-                                                LyrebirdCurve lbc = null;
+                                                LyrebirdCurve lbc;
                                                 lbc = GetLBCurve(rCurves[j]);
                                                 lbCurves.Add(lbc);
                                             }
@@ -337,21 +322,23 @@ namespace LMNA.Lyrebird.GH
                                         }
                                         if (ghc != null)
                                         {
-                                            List<LyrebirdPoint> points = new List<LyrebirdPoint>();
+                                            //List<LyrebirdPoint> points = new List<LyrebirdPoint>();
                                             LyrebirdCurve lbc = GetLBCurve(ghc);
-                                            List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve>();
-                                            lbcurves.Add(lbc);
+                                            List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve> {lbc};
 
-                                            RevitObject ro = new RevitObject();
-                                            ro.Curves = lbcurves;
-                                            ro.FamilyName = familyName;
-                                            ro.Category = category;
-                                            ro.CategoryId = categoryId;
-                                            ro.TypeName = typeName;
-                                            ro.Origin = null;
-                                            ro.GHPath = curves.Paths[i].ToString();
-                                            ro.GHScaleFactor = scale.ScaleFactor;
-                                            ro.GHScaleName = scale.ScaleName;
+                                            RevitObject ro = new RevitObject
+                                            {
+                                                Curves = lbcurves,
+                                                FamilyName = familyName,
+                                                Category = category,
+                                                CategoryId = categoryId,
+                                                TypeName = typeName,
+                                                Origin = null,
+                                                GHPath = curves.Paths[i].ToString(),
+                                                GHScaleFactor = scale.ScaleFactor,
+                                                GHScaleName = scale.ScaleName
+                                            };
+                                            
                                             tempObjs.Add(ro);
                                         }
                                     }
@@ -396,7 +383,7 @@ namespace LMNA.Lyrebird.GH
                                     RevitParameter rp = new RevitParameter();
                                     IGH_Param param = Params.Input[i];
                                     string paramInfo = param.Description;
-                                    string[] pi = paramInfo.Split(new string[] { "\n", ":" }, StringSplitOptions.None);
+                                    string[] pi = paramInfo.Split(new[] { "\n", ":" }, StringSplitOptions.None);
                                     string paramName = null;
                                     try
                                     {
@@ -438,7 +425,7 @@ namespace LMNA.Lyrebird.GH
                         // Send the data to Revit to create and/or modify family instances.
                         if (obj != null && obj.Count > 0)
                         {
-                            bool send = channel.CreateOrModify(obj, this.InstanceGuid);
+                            channel.CreateOrModify(obj, InstanceGuid);
                         }
                         channel.Dispose();
                         try
@@ -467,7 +454,7 @@ namespace LMNA.Lyrebird.GH
                 {
                     RevitParameter rp = inputParameters[i];
                     string type = "Instance";
-                    if (rp.IsType == true)
+                    if (rp.IsType)
                     {
                         type = "Type";
                     }
@@ -480,14 +467,10 @@ namespace LMNA.Lyrebird.GH
                 message = "No data type set.  Double-click to set data type";
             }
 
-            List<string> oids = new List<string>();
-            foreach (LyrebirdId id in uniqueIDs)
-            {
-                oids.Add(id.UniqueId);
-            }
+            //List<string> oids = uniqueIDs.Select(id => id.UniqueId).ToList();
 
             DA.SetData(0, message);
-            DA.SetData(1, this.InstanceGuid.ToString());
+            DA.SetData(1, InstanceGuid.ToString());
         }
 
         public override Guid ComponentGuid
@@ -514,7 +497,7 @@ namespace LMNA.Lyrebird.GH
                     form.ShowDialog();
                     if (form.DialogResult.HasValue && form.DialogResult.Value)
                     {
-                        this.ExpireSolution(true);
+                        ExpireSolution(true);
                         SyncInputs();
                     }
                 }
@@ -541,15 +524,7 @@ namespace LMNA.Lyrebird.GH
 
         private void Menu_ParamNamesClicked(object sender, EventArgs e)
         {
-            if (paramNamesEnabled)
-            {
-                paramNamesEnabled = false;
-            }
-            else
-            {
-                paramNamesEnabled = true;
-                //RefreshParameters();
-            }
+            paramNamesEnabled = !paramNamesEnabled;
         }
 
         // Simple test to see if the communication is working  Just gets the project document name
@@ -560,16 +535,11 @@ namespace LMNA.Lyrebird.GH
             {
                 LyrebirdChannel channel = new LyrebirdChannel(appVersion);
                 channel.Create();
-
-                if (channel != null)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    string test = channel.DocumentName();
-                    if (test == null)
-                        test = "Failed to COllect Document Name";
-                    string write = "Document: " + test;
-                    System.Windows.Forms.MessageBox.Show(write);
-                }
+                //StringBuilder sb = new StringBuilder();
+                string test = channel.DocumentName() ?? "Failed to Collect Document Name";
+                string write = "Document: " + test;
+                System.Windows.Forms.MessageBox.Show(write);
+                
                 channel.Dispose();
             }
             catch (Exception ex)
@@ -600,12 +570,18 @@ namespace LMNA.Lyrebird.GH
                 {
                     for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 7; i++)
                     {
-                        Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject();
-                        param.Name = "Parameter" + (i - 7).ToString(CultureInfo.InvariantCulture);
-                        param.NickName = "P" + (i - 7).ToString(CultureInfo.InvariantCulture);
-                        param.Description = "Parameter Name: " + inputParameters[i - 8].ParameterName + "\nIs Type: " + inputParameters[i - 8].IsType.ToString() + "\nStorageType: " + inputParameters[i - 8].StorageType;
-                        param.Optional = true;
-                        param.Access = GH_ParamAccess.tree;
+                        Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject
+                        {
+                            Name = "Parameter" + (i - 7).ToString(CultureInfo.InvariantCulture),
+                            NickName = "P" + (i - 7).ToString(CultureInfo.InvariantCulture),
+                            Description =
+                              "Parameter Name: " + inputParameters[i - 8].ParameterName + "\nIs Type: " +
+                              inputParameters[i - 8].IsType.ToString() + "\nStorageType: " +
+                              inputParameters[i - 8].StorageType,
+                            Optional = true,
+                            Access = GH_ParamAccess.tree
+                        };
+                        
                         Params.RegisterInputParam(param);
                     }
                 }
@@ -734,10 +710,7 @@ namespace LMNA.Lyrebird.GH
                 {
                     Rhino.Geometry.Vector3d v = orientations[i][0].Value;
 
-                    LyrebirdPoint p = new LyrebirdPoint();
-                    p.X = v.X;
-                    p.Y = v.Y;
-                    p.Z = v.Z;
+                    LyrebirdPoint p = new LyrebirdPoint {X = v.X, Y = v.Y, Z = v.Z};
                     ro.Orientation = p;
                     tempObj.Add(ro);
                 }
@@ -760,10 +733,7 @@ namespace LMNA.Lyrebird.GH
                 {
                     Rhino.Geometry.Vector3d v = orientations[i][0].Value;
 
-                    LyrebirdPoint p = new LyrebirdPoint();
-                    p.X = v.X;
-                    p.Y = v.Y;
-                    p.Z = v.Z;
+                    LyrebirdPoint p = new LyrebirdPoint {X = v.X, Y = v.Y, Z = v.Z};
                     ro.FaceOrientation = p;
                     tempObj.Add(ro);
                 }
@@ -826,8 +796,8 @@ namespace LMNA.Lyrebird.GH
                             }
                             knots.Add(knot);
                         }
-                        lbc = new LyrebirdCurve(lbPoints, weights, knots, nc.Degree, nc.IsPeriodic);
-                        lbc.CurveType = "Spline";
+                        
+                        lbc = new LyrebirdCurve(lbPoints, weights, knots, nc.Degree, nc.IsPeriodic)  { CurveType = "Spline" };
                     }
                 }
                 else
@@ -843,9 +813,7 @@ namespace LMNA.Lyrebird.GH
                         pts.Add(lbp);
                     }
 
-                    lbc = new LyrebirdCurve(pts, "Spline");
-                    lbc.Weights = weights;
-                    lbc.Degree = crv.Degree;
+                    lbc = new LyrebirdCurve(pts, "Spline") { Weights = weights, Degree = crv.Degree };
                 }
             }
 
@@ -866,7 +834,7 @@ namespace LMNA.Lyrebird.GH
                 {
                     foreach (Rhino.Geometry.Curve S in segments)
                     {
-                        CurveSegments(L, S, recursive);
+                        CurveSegments(L, S, true);
                     }
                 }
                 else

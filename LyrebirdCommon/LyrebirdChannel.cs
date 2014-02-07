@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.ServiceModel;
-using System.Text;
 
 namespace LMNA.Lyrebird.LyrebirdCommon
 {
@@ -85,8 +83,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                 }
                 catch
                 {
-                    List<RevitObject> errors = new List<RevitObject>();
-                    errors.Add(new RevitObject("Error", -1, "Error"));
+                    List<RevitObject> errors = new List<RevitObject> {new RevitObject("Error", -1, "Error")};
                     return errors;
                 }
             }
@@ -104,8 +101,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                 }
                 catch
                 {
-                    List<string> errors = new List<string>();
-                    errors.Add("Error");
+                    List<string> errors = new List<string> {"Error"};
                     return errors;
                 }
             }
@@ -189,6 +185,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                     {
                         if (null != _channel)
                         {
+                            //TODO: This is an odd cast...
                             ((IClientChannel)_channel).Abort();
                             _channel = null;
                         }
