@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace LMNA.Lyrebird.GH
+﻿namespace LMNA.Lyrebird.GH
 {
     class GHInfo
     {
@@ -11,7 +6,7 @@ namespace LMNA.Lyrebird.GH
         {
             // Scale factor is based on assumption of feet based units.
 
-          double scale = 1.0;
+            double scale = 1.0;
             Rhino.UnitSystem us = rhinoDoc.ModelUnitSystem;
             string units = us.ToString();
             scale = 1.0;

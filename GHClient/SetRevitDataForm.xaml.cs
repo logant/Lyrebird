@@ -1,18 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
 using LMNA.Lyrebird.LyrebirdCommon;
 
 namespace LMNA.Lyrebird.GH
@@ -20,9 +12,9 @@ namespace LMNA.Lyrebird.GH
     /// <summary>
     /// Interaction logic for SetRevitDataForm.xaml
     /// </summary>
-    public partial class SetRevitDataForm : Window
+    public partial class SetRevitDataForm
     {
-        static LinearGradientBrush enterBrush = null;
+        static LinearGradientBrush enterBrush;
         readonly GHClient parent;
         readonly LyrebirdChannel channel;
 
@@ -51,8 +43,8 @@ namespace LMNA.Lyrebird.GH
             InitializeComponent();
 
             // Position the form.
-            this.Left = 0;
-            this.Top = 0;
+            Left = 0;
+            Top = 0;
             //MessageBox.Show(string.Format("The system is {0} and the endpoint is:\n{1}", client.State.ToString(), client.Endpoint.Address.ToString()));
             if (channel != null)
             {
@@ -116,7 +108,7 @@ namespace LMNA.Lyrebird.GH
 
         private void cancelButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void cancelButton_MouseEnter(object sender, MouseEventArgs e)
@@ -130,7 +122,7 @@ namespace LMNA.Lyrebird.GH
 
         private void cancelButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            cancelRect.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0, 0, 0, 0));
+            cancelRect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
         }
 
         private void okButton_Click(object sender, RoutedEventArgs e)
@@ -140,9 +132,9 @@ namespace LMNA.Lyrebird.GH
             parent.TypeName = typeName;
             parent.Category = category;
             parent.CategoryId = categoryId;
-            RevitParameter rp = new RevitParameter();
+            //RevitParameter rp = new RevitParameter();
             parent.InputParams = usedParameters;
-            this.Close();
+            Close();
         }
 
         private void okButton_MouseEnter(object sender, MouseEventArgs e)
@@ -156,7 +148,7 @@ namespace LMNA.Lyrebird.GH
 
         private void okButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            okRect.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0, 0, 0, 0));
+            okRect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
         }
 
         private void addButton_Click(object sender, RoutedEventArgs e)
@@ -177,27 +169,33 @@ namespace LMNA.Lyrebird.GH
 
         private void addButton_MouseEnter(object sender, MouseEventArgs e)
         {
-            LinearGradientBrush brush = new LinearGradientBrush();
-            brush.StartPoint = new System.Windows.Point(0, 0);
-            brush.EndPoint = new System.Windows.Point(0, 1);
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 0.0));
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 180, 180, 180), 1.0));
+            LinearGradientBrush brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(0, 1)
+            };
+            
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(255, 232, 232, 232), 0.0));
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(255, 180, 180, 180), 1.0));
 
             addRect.Fill = brush;
         }
 
         private void addButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            addRect.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0, 0, 0, 0));
+            addRect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
         }
 
         private LinearGradientBrush EnterBrush()
         {
-            LinearGradientBrush brush = new LinearGradientBrush();
-            brush.StartPoint = new System.Windows.Point(0, 0);
-            brush.EndPoint = new System.Windows.Point(0, 1);
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 180, 180, 180), 0.0));
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 1.0));
+            LinearGradientBrush brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(0, 1)
+            };
+            
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(255, 180, 180, 180), 0.0));
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(255, 232, 232, 232), 1.0));
             return brush;
         }
 
@@ -258,8 +256,11 @@ namespace LMNA.Lyrebird.GH
             {
                 for (int i = 1; i <= usedParameters.Count; i++)
                 {
-                    ParameterControl control = new ParameterControl(usedParameters[i - 1]);
-                    control.Margin = new Thickness(0, 0, 0, 0);
+                    ParameterControl control = new ParameterControl(usedParameters[i - 1])
+                    {
+                        Margin = new Thickness(0, 0, 0, 0)
+                    };
+                    
                     controlPanel.Children.Add(control);
                 }
             }

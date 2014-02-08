@@ -1,17 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using LMNA.Lyrebird.LyrebirdCommon;
 
 namespace LMNA.Lyrebird.GH
@@ -19,7 +11,7 @@ namespace LMNA.Lyrebird.GH
     /// <summary>
     /// Interaction logic for SelectParameterForm.xaml
     /// </summary>
-    public partial class SelectParameterForm : Window
+    public partial class SelectParameterForm
     {
         readonly List<RevitParameter> parameters;
 
@@ -40,9 +32,9 @@ namespace LMNA.Lyrebird.GH
             // Preselected parameters
             if (selectedParams.Count > 0)
             {
-                for (int i = 0; i < listView.Items.Count; i++)
+                foreach (object t in listView.Items)
                 {
-                    RevitParameter rp = listView.Items[i] as RevitParameter;
+                    RevitParameter rp = t as RevitParameter;
                     foreach (RevitParameter sp in selectedParams)
                     {
                         if (rp != null && rp.ParameterName == sp.ParameterName)
@@ -83,7 +75,7 @@ namespace LMNA.Lyrebird.GH
             }
             parent.SelectedParameters = selectedParams;
             parent.AddControls();
-            this.Close();
+            Close();
         }
 
         private void okButton_MouseEnter(object sender, MouseEventArgs e)
@@ -97,12 +89,12 @@ namespace LMNA.Lyrebird.GH
 
         private void okButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            okRect.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0, 0, 0, 0));
+            okRect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
         }
 
         private void cancelButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void cancelButton_MouseEnter(object sender, MouseEventArgs e)
@@ -116,22 +108,25 @@ namespace LMNA.Lyrebird.GH
 
         private void cancelButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            cancelRect.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0, 0, 0, 0));
+            cancelRect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
         }
 
         private LinearGradientBrush EnterBrush()
         {
-            LinearGradientBrush brush = new LinearGradientBrush();
-            brush.StartPoint = new System.Windows.Point(0, 0);
-            brush.EndPoint = new System.Windows.Point(0, 1);
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 180, 180, 180), 0.0));
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 1.0));
+            LinearGradientBrush brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(0, 1)
+            };
+
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(255, 180, 180, 180), 0.0));
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(255, 232, 232, 232), 1.0));
             return brush;
         }
 
         private void logo_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            System.Diagnostics.Process.Start(@"http://lmnts.lmnarchitects.com");
+            Process.Start(@"http://lmnts.lmnarchitects.com");
         }
     }
 }

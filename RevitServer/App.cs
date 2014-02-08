@@ -1,27 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
-
-using Autodesk.Revit.UI;
 using System.Windows.Media.Imaging;
+using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
-using LMNA.Lyrebird.LyrebirdCommon;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.DB;
+using LMNA.Lyrebird.LyrebirdCommon;
 
 namespace LMNA.Lyrebird
 {
     public class RevitServerApp : IExternalApplication
     {
-        bool serverActive = false;
+        bool serverActive;
         static RibbonItem serverButton;
         ServiceHost serviceHost;
         readonly Uri address = new Uri("net.pipe://localhost/LMNts/LyrebirdServer/Revit2014");
-        bool disableButton = false;
+        bool disableButton;
 
         internal static UIApplication uiApp = null;
         UIControlledApplication uicApp;
@@ -133,7 +129,7 @@ namespace LMNA.Lyrebird
                     }
                 }
 
-                if (!found && panel == null)
+                if (!found)
                 {
                     // Create the panel
                     RibbonPanel utilitiesPanel = application.CreateRibbonPanel(tabName, "Utilities");
@@ -157,6 +153,7 @@ namespace LMNA.Lyrebird
             return Result.Succeeded;
         }
 
+        //TODO: Is this being used?  Do we need it?
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e)
         {
             Document doc = e.GetDocument();
@@ -206,13 +203,13 @@ namespace LMNA.Lyrebird
                     ServiceOn();
                 }
             }
-            catch (System.ServiceModel.AddressAlreadyInUseException ex)
+            catch (AddressAlreadyInUseException ex)
             {
                 Debug.WriteLine(ex.Message);
                 ServiceOff();
                 disableButton = true;
             }
-            catch (System.ServiceModel.AddressAccessDeniedException ex)
+            catch (AddressAccessDeniedException ex)
             {
                 // Couldn"t Open the Server
                 Debug.WriteLine(ex.Message);  
