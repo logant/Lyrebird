@@ -71,8 +71,8 @@ namespace LMNA.Lyrebird.GH
         int appVersion = 1;
 
         bool paramNamesEnabled = true;
-
-        //private string[] m_settings;
+        bool r2014 = true;
+        bool r2015 = false;
 
         public List<RevitParameter> InputParams
         {
@@ -118,33 +118,22 @@ namespace LMNA.Lyrebird.GH
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddBooleanParameter("Trigger", "T", "Trigger to stream the data from Grasshopper to another application.", GH_ParamAccess.item, false);
-            pManager.AddIntegerParameter("Application", "A", "Application that will receive the data.", GH_ParamAccess.item, 1);
             pManager.AddPointParameter("Origin Point", "OP", "Origin points for sent objects.", GH_ParamAccess.tree, null);
             pManager.AddPointParameter("Adaptive Points", "AP", "Adaptive component points.", GH_ParamAccess.tree, null);
             pManager.AddCurveParameter("Curve", "C", "Single arc, line, or closed planar curves.  Closed planar curves can be used to generate floor, wall or roof sketches, or single segment non-closed arcs or lines can be used for line based family generation.", GH_ParamAccess.tree);
             pManager.AddVectorParameter("Orientation", "O", "Vector to orient objects.", GH_ParamAccess.tree);
             pManager.AddVectorParameter("Orientation on Face", "F", "Orientation of the element in relation to the face it will be hosted to", GH_ParamAccess.tree);
+            pManager[1].Optional = true;
             pManager[2].Optional = true;
             pManager[3].Optional = true;
             pManager[4].Optional = true;
             pManager[5].Optional = true;
-            pManager[6].Optional = true;
-            Grasshopper.Kernel.Parameters.Param_Integer paramInt = pManager[1] as Grasshopper.Kernel.Parameters.Param_Integer;
-            if (paramInt != null)
-            {
-                paramInt.AddNamedValue("Send to Revit 2013", 0);
-                paramInt.AddNamedValue("Send to Revit 2014", 1);
-                paramInt.AddNamedValue("Send to Revit 2015", 2);
-            }
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
             pManager.AddTextParameter("Msg", "Msg", "Temporary message", GH_ParamAccess.item);
             pManager.AddTextParameter("Guid", "G", "Guids for this component instance GH", GH_ParamAccess.item);
-
-            // TODO: See about tracking ElementId's of created revit elements back to the GH component
-            // Returning ID's from Revit doesn't work as is since it runs on a separate thread and this continues before it's finished
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -156,12 +145,11 @@ namespace LMNA.Lyrebird.GH
             GH_Structure<GH_Vector> orientations = new GH_Structure<GH_Vector>();
             GH_Structure<GH_Vector> faceOrientations = new GH_Structure<GH_Vector>();
             DA.GetData(0, ref runCommand);
-            DA.GetData(1, ref appVersion);
-            DA.GetDataTree(2, out origPoints);
-            DA.GetDataTree(3, out adaptPoints);
-            DA.GetDataTree(4, out curves);
-            DA.GetDataTree(5, out orientations);
-            DA.GetDataTree(6, out faceOrientations);
+            DA.GetDataTree(1, out origPoints);
+            DA.GetDataTree(2, out adaptPoints);
+            DA.GetDataTree(3, out curves);
+            DA.GetDataTree(4, out orientations);
+            DA.GetDataTree(5, out faceOrientations);
 
             // Make sure the family and type is set before running the command.
             if (runCommand && (familyName == null || familyName == "Not Selected"))
@@ -369,7 +357,7 @@ namespace LMNA.Lyrebird.GH
                         }
 
                         // Parameters...
-                        if (Params.Input.Count > 7)
+                        if (Params.Input.Count > 6)
                         {
                             List<RevitObject> currentObjs = obj;
                             List<RevitObject> tempObjs = new List<RevitObject>();
@@ -377,7 +365,7 @@ namespace LMNA.Lyrebird.GH
                             {
                                 RevitObject ro = currentObjs[r];
                                 List<RevitParameter> revitParams = new List<RevitParameter>();
-                                for (int i = 7; i < Params.Input.Count; i++)
+                                for (int i = 6; i < Params.Input.Count; i++)
                                 {
                                     
                                     RevitParameter rp = new RevitParameter();
@@ -467,8 +455,6 @@ namespace LMNA.Lyrebird.GH
                 message = "No data type set.  Double-click to set data type";
             }
 
-            //List<string> oids = uniqueIDs.Select(id => id.UniqueId).ToList();
-
             DA.SetData(0, message);
             DA.SetData(1, InstanceGuid.ToString());
         }
@@ -518,8 +504,32 @@ namespace LMNA.Lyrebird.GH
 
         protected override void AppendAdditionalComponentMenuItems(System.Windows.Forms.ToolStripDropDown iMenu)
         {
-            //Menu_AppendItem(iMenu, "Test", Menu_TestClicked);
             Menu_AppendItem(iMenu, "Full Parameter Names", Menu_ParamNamesClicked, true, paramNamesEnabled);
+            
+            // Application options.  Only 2014 will work for now.  Consider removing 2015 and/or adding support for 2013
+            System.Windows.Forms.ToolStripMenuItem appItem = Menu_AppendItem(iMenu, "Application");
+            appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2014", Menu_R2014Clicked, true, r2014));
+            appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2015", Menu_R2015Clicked, true, r2015));
+        }
+
+        private void Menu_R2014Clicked(object sender, EventArgs e)
+        {
+            r2014 = !r2014;
+            if (r2014)
+            {
+                r2015 = false;
+            }
+            appVersion = 1;
+        }
+
+        private void Menu_R2015Clicked(object sender, EventArgs e)
+        {
+            r2015 = !r2015;
+            if (r2015)
+            {
+                r2014 = false;
+            }
+            appVersion = 2;
         }
 
         private void Menu_ParamNamesClicked(object sender, EventArgs e)
@@ -535,7 +545,6 @@ namespace LMNA.Lyrebird.GH
             {
                 LyrebirdChannel channel = new LyrebirdChannel(appVersion);
                 channel.Create();
-                //StringBuilder sb = new StringBuilder();
                 string test = channel.DocumentName() ?? "Failed to Collect Document Name";
                 string write = "Document: " + test;
                 System.Windows.Forms.MessageBox.Show(write);
@@ -548,7 +557,8 @@ namespace LMNA.Lyrebird.GH
             }
         }
 
-        // Originally this was done from the right-click menu.  It's since been changed 
+        // Originally this was done from the right-click menu.
+        // It has since been changed to run whenever parameters are added/removed
         private void SyncInputs()
         {
             if (inputParameters.Count > 0)
@@ -561,23 +571,21 @@ namespace LMNA.Lyrebird.GH
                     return;
                 }
                 
-
-
                 RecordUndoEvent("Sync Inputs");
 
                 //  Check if we need to add inputs
-                if (inputParameters.Count > Params.Input.Count - 7)
+                if (inputParameters.Count > Params.Input.Count - 6)
                 {
-                    for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 7; i++)
+                    for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 6; i++)
                     {
                         Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject
                         {
-                            Name = "Parameter" + (i - 7).ToString(CultureInfo.InvariantCulture),
-                            NickName = "P" + (i - 7).ToString(CultureInfo.InvariantCulture),
+                            Name = "Parameter" + (i - 6).ToString(CultureInfo.InvariantCulture),
+                            NickName = "P" + (i - 6).ToString(CultureInfo.InvariantCulture),
                             Description =
-                              "Parameter Name: " + inputParameters[i - 8].ParameterName + "\nIs Type: " +
-                              inputParameters[i - 8].IsType.ToString() + "\nStorageType: " +
-                              inputParameters[i - 8].StorageType,
+                              "Parameter Name: " + inputParameters[i - 7].ParameterName + "\nIs Type: " +
+                              inputParameters[i - 7].IsType.ToString() + "\nStorageType: " +
+                              inputParameters[i - 7].StorageType,
                             Optional = true,
                             Access = GH_ParamAccess.tree
                         };
@@ -587,10 +595,10 @@ namespace LMNA.Lyrebird.GH
                 }
 
                 // Remove unnecessay inputs
-                else if (inputParameters.Count < Params.Input.Count - 7)
+                else if (inputParameters.Count < Params.Input.Count - 6)
                 {
                     //System.Windows.Forms.MessageBox.Show("Going to try and remove parameters.");
-                    while (Params.Input.Count > inputParameters.Count + 7)
+                    while (Params.Input.Count > inputParameters.Count + 6)
                     {
                         IGH_Param param = Params.Input[Params.Input.Count - 1];
                         Params.UnregisterInputParameter(param);
@@ -608,7 +616,7 @@ namespace LMNA.Lyrebird.GH
             {
                 try
                 {
-                    IGH_Param param = Params.Input[i + 7];
+                    IGH_Param param = Params.Input[i + 6];
                     if (paramNamesEnabled)
                     {
                         param.NickName = inputParameters[i].ParameterName;
