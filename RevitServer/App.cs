@@ -16,7 +16,8 @@ namespace LMNA.Lyrebird
         bool serverActive;
         static RibbonItem serverButton;
         ServiceHost serviceHost;
-        readonly Uri address = new Uri("net.pipe://localhost/LMNts/LyrebirdServer/Revit2014");
+        readonly string addr = @"net.pipe://localhost/LMNts/LyrebirdServer/Revit";
+        Uri address;
         bool disableButton;
 
         internal static UIApplication uiApp = null;
@@ -59,6 +60,7 @@ namespace LMNA.Lyrebird
 
         public Result OnStartup(UIControlledApplication application)
         {
+            address = new Uri(addr + application.ControlledApplication.VersionNumber);
             uicApp = application;
             application.Idling += OnIdling;
             

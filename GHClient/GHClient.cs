@@ -262,9 +262,9 @@ namespace LMNA.Lyrebird.GH
                                     List<RevitObject> tempObjs = new List<RevitObject>();
                                     for (int i = 0; i < curves.Branches.Count; i++)
                                     {
-                                        //Rhino.Geometry.Curve crv = curves[i][0].Value;
+                                        Rhino.Geometry.Curve crv = curves[i][0].Value;
                                         List<Rhino.Geometry.Curve> rCurves = new List<Rhino.Geometry.Curve>();
-                                        //bool getCrvs = CurveSegments(rCurves, crv, true);
+                                        bool getCrvs = CurveSegments(rCurves, crv, true);
                                         if (rCurves.Count > 0)
                                         {
                                             RevitObject ro = new RevitObject();
