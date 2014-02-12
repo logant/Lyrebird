@@ -35,7 +35,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                 }
                 else if (productId == 2)
                 {
-                    //_endpoint = new EndpointAddress("net.pipe://localhost/LMNts/LyrebirdServer/Revit2015/LyrebirdService");
+                    _endpoint = new EndpointAddress("net.pipe://localhost/LMNts/LyrebirdServer/Revit2015/LyrebirdService");
                 }
                 else
                 {
