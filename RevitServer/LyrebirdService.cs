@@ -2094,6 +2094,8 @@ namespace LMNA.Lyrebird
                             try
                             {
                                 bool supress = false;
+                                bool supressedReplace = false;
+                                bool supressedModify = true;
                                 for (int i = 0; i < existingObjects.Count; i++)
                                 {
                                     RevitObject obj = existingObjects[i];
@@ -2287,7 +2289,14 @@ namespace LMNA.Lyrebird
                                         bool replace = false;
                                         if (supress)
                                         {
-                                            replace = true;
+                                            if (supressedReplace)
+                                            {
+                                                replace = true;
+                                            }
+                                            else
+                                            {
+                                                replace = false;
+                                            }
                                         }
                                         if (profileWarning && !supress)
                                         {
@@ -2308,7 +2317,18 @@ namespace LMNA.Lyrebird
                                             TaskDialogResult result = warningDlg.Show();
                                             if (result == TaskDialogResult.CommandLink1)
                                             {
-                                                replace = true;
+                                                supressedReplace = true;
+                                                supress = warningDlg.WasVerificationChecked();
+                                            }
+                                            if (result == TaskDialogResult.CommandLink2)
+                                            {
+                                                supressedReplace = false;
+                                                supress = warningDlg.WasVerificationChecked();
+                                            }
+                                            if (result == TaskDialogResult.CommandLink3)
+                                            {
+                                                supressedReplace = false;
+                                                supressedModify = false;
                                                 supress = warningDlg.WasVerificationChecked();
                                             }
                                         }
@@ -2470,7 +2490,7 @@ namespace LMNA.Lyrebird
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(w, uniqueId, instanceSchema);
                                             }
-                                            else  // Just update the parameters and don't change the wall
+                                            else if (supressedModify) // Just update the parameters and don't change the wall
                                             {
                                                 w = doc.GetElement(existingElems[i]) as Wall;
 
@@ -2672,7 +2692,7 @@ namespace LMNA.Lyrebird
                                                     }
                                                 }
                                             }
-                                            else // Just modify the floor and don't risk replacing it.
+                                            else if (supressedModify) // Just modify the floor and don't risk replacing it.
                                             {
                                                 flr = doc.GetElement(existingElems[i]) as Floor;
 
