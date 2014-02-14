@@ -62,16 +62,17 @@ namespace LMNA.Lyrebird
         {
             address = new Uri(addr + application.ControlledApplication.VersionNumber);
             uicApp = application;
-            application.Idling += OnIdling;
+            
             
             _app = this;
             serverActive = Properties.Settings.Default.serverActive;
-            
+
+            // Create the button
             try
             {
                 BitmapSource bms;
                 PushButtonData lyrebirdButton;
-                StartServer();
+                //StartServer();
                 if (disableButton)
                 {
                     bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
@@ -91,6 +92,8 @@ namespace LMNA.Lyrebird
                             LargeImage = bms,
                             ToolTip = "The Lyrebird Server currently on and will accept requests for data and can create objects.  Push button to toggle the server off.",
                         };
+                        StartServer();
+                        //ServiceOn();
                     }
                     else
                     {
@@ -149,47 +152,36 @@ namespace LMNA.Lyrebird
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error2", ex.ToString());
+                TaskDialog.Show("Error", ex.ToString());
             }
 
             return Result.Succeeded;
         }
 
-        //TODO: Is this being used?  Do we need it?
-        private void OnDocumentChanged(object sender, DocumentChangedEventArgs e)
-        {
-            Document doc = e.GetDocument();
-            List<LyrebirdId> tempList = new List<LyrebirdId>();
-            foreach(ElementId id in e.GetAddedElementIds())
-            {
-                Element elem = doc.GetElement(id);
-                LyrebirdId lid = new LyrebirdId(elem.UniqueId, "Unknown");
-                tempList.Add(lid);
-            }
-            createdIds = tempList;
-        }
-
         private void OnIdling(object sender, IdlingEventArgs e)
         {
-            if (uiApp == null)
+            if (serverActive)
             {
-                uiApp = sender as UIApplication;
-            }
-            e.SetRaiseWithoutDelay();
+                if (uiApp == null)
+                {
+                    uiApp = sender as UIApplication;
+                }
+                e.SetRaiseWithoutDelay();
 
-            if (!TaskContainer.Instance.HasTaskToPerform)
-            {
-                return;
-            }
-            try
-            {
-                var task = TaskContainer.Instance.DequeueTask();
-                task(uiApp);
-            }
-            catch (Exception ex)
-            {
-                //TaskDialog.Show("Error at Idle", ex.Message);
-                if (uiApp != null) uiApp.Application.WriteJournalComment("Lyrebird Error: " + ex.ToString(), true);
+                if (!TaskContainer.Instance.HasTaskToPerform)
+                {
+                    return;
+                }
+                try
+                {
+                    var task = TaskContainer.Instance.DequeueTask();
+                    task(uiApp);
+                }
+                catch (Exception ex)
+                {
+                    //TaskDialog.Show("Error at Idle", ex.Message);
+                    if (uiApp != null) uiApp.Application.WriteJournalComment("Lyrebird Error: " + ex.ToString(), true);
+                }
             }
         }
 
@@ -223,13 +215,39 @@ namespace LMNA.Lyrebird
             }
         }
 
+        private void StopServer()
+        {
+            if (serviceHost != null)
+            {
+                try
+                {
+                    serviceHost.Abort();
+                    serviceHost.Close();
+                    serviceHost = null;
+                    ServiceOff();
+                }
+                catch (Exception exception)
+                {
+                    Debug.WriteLine(exception.Message);
+                }
+            }
+        }
+
         private void ServiceOn()
         {
-            // do something
+            // Remove queued tasks
+            while (TaskContainer.Instance.HasTaskToPerform)
+            {
+                TaskContainer.Instance.DequeueTask();
+            }
+
+            // Start the idling event so it can receive from or send to Grasshopper
+            uicApp.Idling += OnIdling;
         }
         private void ServiceOff()
         {
-            // do something
+            // Stop the idling event so it can't receive from or send to Grasshopper
+            uicApp.Idling -= OnIdling; 
         }
 
         public void Toggle()
@@ -246,7 +264,8 @@ namespace LMNA.Lyrebird
                     button.ToolTip = "The Lyrebird Server is currently off and will not accept requests for data or create objects.  Push button to toggle the server on.";
                     serverButton = button;
                 }
-                ServiceOff();
+                StopServer();
+                //ServiceOff();
             }
             else
             {
@@ -260,7 +279,8 @@ namespace LMNA.Lyrebird
                     rbutton.ToolTip = "The Lyrebird Server currently on and will accept requests for data and can create objects.  Push button to toggle the server off.";
                     serverButton = rbutton;
                 }
-                ServiceOn();
+                StartServer();
+                //ServiceOn();
             }
             Properties.Settings.Default.serverActive = serverActive;
             Properties.Settings.Default.Save();

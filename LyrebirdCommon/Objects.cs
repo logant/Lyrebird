@@ -75,6 +75,9 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         [DataMember]
         public double GHScaleFactor { get; set; }
 
+        [DataMember]
+        public List<int> CurveIds { get; set; }
+
         //public Autodesk.Revit.DB.Curve Curve
         //{
         //    get { return curve; }

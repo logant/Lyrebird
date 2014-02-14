@@ -815,7 +815,7 @@ namespace LMNA.Lyrebird
                 }
                 catch
                 {
-                    currentDocName = "I FAILED";
+                    currentDocName = "NULL";
                 }
                 Monitor.Wait(_locker, WAIT_TIMEOUT);
             }
@@ -1163,7 +1163,7 @@ namespace LMNA.Lyrebird
                                 {
 
                                     #region single line based family
-                                    if (obj.Curves.Count == 1)
+                                    if (obj.Curves.Count == 1 && obj.Curves[0].CurveType != "Circle")
                                     {
                                             
                                         LyrebirdCurve lbc = obj.Curves[0];
@@ -1375,7 +1375,19 @@ namespace LMNA.Lyrebird
                                             {
                                                 foreach (LyrebirdCurve lbc in obj.Curves)
                                                 {
-                                                    if (lbc.CurveType == "Arc")
+                                                    if (lbc.CurveType == "Circle")
+                                                    {
+                                                        XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                        XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                        XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
+                                                        XYZ pt4 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Z, lengthDUT));
+                                                        XYZ pt5 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Z, lengthDUT));
+                                                        Arc arc1 = Arc.Create(pt1, pt3, pt2);
+                                                        Arc arc2 = Arc.Create(pt3, pt5, pt4);
+                                                        crvArray.Add(arc1);
+                                                        crvArray.Add(arc2);
+                                                    }
+                                                    else if (lbc.CurveType == "Arc")
                                                     {
                                                         XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
                                                         XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
@@ -1446,10 +1458,49 @@ namespace LMNA.Lyrebird
                                             }
                                             
                                             // Generate the curvearray from the incoming curves
-                                            CurveArray crvArray = GetCurveArray(obj.Curves);
+                                            CurveArray crvArray;
+                                            Floor flr;
+                                            List<Opening> flrOpenings = new List<Opening>();
+                                            if (obj.CurveIds != null && obj.CurveIds.Count > 0)
+                                            {
+                                                // get the main profile
+                                                int crvCount = obj.CurveIds[0];
+                                                List<LyrebirdCurve> primaryCurves = obj.Curves.GetRange(0, crvCount);
+                                                crvArray = GetCurveArray(primaryCurves);
+                                                flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+                                                
+                                                // TODO: You cannot create holes in an element with the API without using openings rather than interior closed curves.
+                                                // Evaluate with later versions if it's worth creating the openings and updating them
+                                                // Create the openings associated with it.
+                                                //int start = crvCount - 1;
+                                                //for (int i = 1; i < obj.CurveIds.Count; i++)
+                                                //{
+                                                //    List<LyrebirdCurve> interiorCurves = obj.Curves.GetRange(start, obj.CurveIds[i]);
+                                                //    start += interiorCurves.Count;
+                                                //    CurveArray openingArray = GetCurveArray(interiorCurves);
+                                                //    try
+                                                //    {
+                                                //        SubTransaction st2 = new SubTransaction(doc);
+                                                //        st2.Start();
+                                                //        Opening opening = doc.Create.NewOpening(flr, openingArray, false);
+                                                //        st2.Commit();
+                                                //        flrOpenings.Add(opening);
+
+                                                //    }
+                                                //    catch (Exception ex)
+                                                //    {
+                                                //        TaskDialog.Show("TEST", ex.Message);
+                                                //    }
+                                                //}
+                                            }
+                                            else
+                                            {
+                                                crvArray = GetCurveArray(obj.Curves);
+                                                flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+                                            }
                                             
                                             // Create the floor
-                                            Floor flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+                                            //flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
                                             
                                             if (Math.Abs(offset - 0) > double.Epsilon)
                                             {
@@ -1508,6 +1559,7 @@ namespace LMNA.Lyrebird
                             }
                             catch (Exception ex)
                             {
+                                TaskDialog.Show("Error", ex.ToString());
                               Debug.WriteLine(ex.Message);
                             }
                         }
@@ -2041,6 +2093,7 @@ namespace LMNA.Lyrebird
                             FamilyInstance fi = null;
                             try
                             {
+                                bool supress = false;
                                 for (int i = 0; i < existingObjects.Count; i++)
                                 {
                                     RevitObject obj = existingObjects[i];
@@ -2062,7 +2115,7 @@ namespace LMNA.Lyrebird
                                         }
                                     }
                                     #region single line based family
-                                    if (obj.Curves.Count == 1)
+                                    if (obj.Curves.Count == 1 && obj.Curves[0].CurveType != "Circle")
                                     {
 
                                         LyrebirdCurve lbc = obj.Curves[0];
@@ -2099,7 +2152,7 @@ namespace LMNA.Lyrebird
                                                     offset = lvl.Elevation - UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT);
                                                 }
 
-                                                // Create the wall
+                                                // Modify the wall
                                                 Wall w = null;
                                                 try
                                                 {
@@ -2160,6 +2213,19 @@ namespace LMNA.Lyrebird
                                                     lc.Curve = crv;
                                                 }
 
+                                                // Change the family and symbol if necessary
+                                                if (fi.Symbol.Name != symbol.Name)
+                                                {
+                                                    try
+                                                    {
+                                                        fi.Symbol = symbol;
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        Debug.WriteLine(ex.Message);
+                                                    }
+                                                }
+
                                                 // Assign the parameters
                                                 SetParameters(fi, obj.Parameters, doc);
                                             }
@@ -2186,6 +2252,19 @@ namespace LMNA.Lyrebird
                                                     crv = Arc.Create(pt1, pt3, pt2);
                                                 }
 
+                                                // Change the family and symbol if necessary
+                                                if (fi.Symbol.Name != symbol.Name)
+                                                {
+                                                    try
+                                                    {
+                                                        fi.Symbol = symbol;
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        Debug.WriteLine(ex.Message);
+                                                    }
+                                                }
+
                                                 try
                                                 {
                                                     LocationCurve lc = fi.Location as LocationCurve;
@@ -2206,7 +2285,11 @@ namespace LMNA.Lyrebird
                                     else
                                     {
                                         bool replace = false;
-                                        if (profileWarning)
+                                        if (supress)
+                                        {
+                                            replace = true;
+                                        }
+                                        if (profileWarning && !supress)
                                         {
                                             TaskDialog warningDlg = new TaskDialog("Warning")
                                             {
@@ -2220,11 +2303,13 @@ namespace LMNA.Lyrebird
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Replace the existing elements, understanding hosted elements may be lost");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Only updated parameter information and not profile or location information");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
+                                            warningDlg.VerificationText = "Supress similar warnings";
 
                                             TaskDialogResult result = warningDlg.Show();
                                             if (result == TaskDialogResult.CommandLink1)
                                             {
                                                 replace = true;
+                                                supress = warningDlg.WasVerificationChecked();
                                             }
                                         }
                                         // A list of curves.  These should equate a closed planar curve from GH.
@@ -2258,7 +2343,19 @@ namespace LMNA.Lyrebird
                                             {
                                                 foreach (LyrebirdCurve lbc in obj.Curves)
                                                 {
-                                                    if (lbc.CurveType == "Arc")
+                                                    if (lbc.CurveType == "Circle")
+                                                    {
+                                                        XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                        XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                        XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
+                                                        XYZ pt4 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Z, lengthDUT));
+                                                        XYZ pt5 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Z, lengthDUT));
+                                                        Arc arc1 = Arc.Create(pt1, pt3, pt2);
+                                                        Arc arc2 = Arc.Create(pt3, pt5, pt4);
+                                                        crvArray.Add(arc1);
+                                                        crvArray.Add(arc2);
+                                                    }
+                                                    else if (lbc.CurveType == "Arc")
                                                     {
                                                         XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
                                                         XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
@@ -2372,78 +2469,6 @@ namespace LMNA.Lyrebird
                                                 doc.Delete(origWall.Id);
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(w, uniqueId, instanceSchema);
-
-                                                #region ModifyWallProfile
-                                                //    }
-                                            //    else
-                                            //    {
-                                            //        // Attempt to recreate the profile
-                                            //        try
-                                            //        {
-                                            //            TaskDialog.Show("Curve Counts", "Incoming: " + crvArray.Count.ToString() + "\nExisting: " + mLines.Count.ToString());
-                                            //            int crvCount = 0;
-                                            //            foreach (ModelCurve l in mLines)
-                                            //            {
-                                            //                LocationCurve lc = l.Location as LocationCurve;
-                                            //                lc.Curve = crvArray[crvCount];
-                                            //                crvCount++;
-                                            //            }
-                                            //            TaskDialog.Show("Edit", "I'm going to try");
-                                            //            // Set the parameters
-                                            //            SetParameters(origWall, obj.Parameters);
-                                            //        }
-                                            //        catch (Exception ex)
-                                            //        {
-                                            //            TaskDialog.Show("Error", ex.Message);
-
-                                            //            w = Wall.Create(doc, crvArray, wallType.Id, lvl.Id, false);
-
-                                            //            foreach (Parameter p in origWall.Parameters)
-                                            //            {
-                                            //                try
-                                            //                {
-                                            //                    Parameter newParam = w.get_Parameter(p.Definition.Name);
-                                            //                    if (newParam != null)
-                                            //                    {
-                                            //                        switch (newParam.StorageType)
-                                            //                        {
-                                            //                            case StorageType.Double:
-                                            //                                newParam.Set(p.AsDouble());
-                                            //                                break;
-                                            //                            case StorageType.ElementId:
-                                            //                                newParam.Set(p.AsElementId());
-                                            //                                break;
-                                            //                            case StorageType.Integer:
-                                            //                                newParam.Set(p.AsInteger());
-                                            //                                break;
-                                            //                            case StorageType.String:
-                                            //                                newParam.Set(p.AsString());
-                                            //                                break;
-                                            //                            default:
-                                            //                                newParam.Set(p.AsString());
-                                            //                                break;
-                                            //                        }
-                                            //                    }
-                                            //                }
-                                            //                catch { }
-                                            //            }
-
-                                            //            if (offset != 0)
-                                            //            {
-                                            //                Parameter p = w.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-                                            //                p.Set(offset);
-                                            //            }
-                                            //            doc.Delete(origWall.Id);
-
-                                            //            // Set the incoming parameters
-                                            //            SetParameters(w, obj.Parameters);
-
-                                            //            // Assign the GH InstanceGuid
-                                            //            AssignGuid(w, uniqueId, instanceSchema);
-                                            //        }
-                                                //    }
-                                                #endregion
-
                                             }
                                             else  // Just update the parameters and don't change the wall
                                             {
@@ -2485,8 +2510,6 @@ namespace LMNA.Lyrebird
                                             Floor flr = null;
                                             if (replace)
                                             {
-
-
                                                 Floor origFloor = doc.GetElement(existingElems[i]) as Floor;
 
                                                 // Find the model curves for the original wall
@@ -2512,11 +2535,20 @@ namespace LMNA.Lyrebird
 
                                                 // Floors have an extra modelcurve for the SpanDirection.  Remove the last Item to get rid of it.
                                                 mLines.RemoveAt(mLines.Count - 1);
-                                                
                                                 if (mLines.Count != crvArray.Size) // The sketch is different from the incoming curves so floor is recreated
                                                 {
-                                                    flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
-
+                                                    if (obj.CurveIds != null && obj.CurveIds.Count > 0)
+                                                    {
+                                                        // get the main profile
+                                                        int crvCount = obj.CurveIds[0];
+                                                        List<LyrebirdCurve> primaryCurves = obj.Curves.GetRange(0, crvCount);
+                                                        crvArray = GetCurveArray(primaryCurves);
+                                                        flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+                                                    }
+                                                    else
+                                                    {
+                                                        flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
+                                                    }
                                                     foreach (Parameter p in origFloor.Parameters)
                                                     {
                                                         try
@@ -2571,12 +2603,24 @@ namespace LMNA.Lyrebird
                                                             crvCount++;
                                                         }
 
+                                                        // Change the family and symbol if necessary
+                                                        if (origFloor.FloorType.Name != floorType.Name)
+                                                        {
+                                                            try
+                                                            {
+                                                                origFloor.FloorType = floorType;
+                                                            }
+                                                            catch (Exception ex)
+                                                            {
+                                                                Debug.WriteLine(ex.Message);
+                                                            }
+                                                        }
+
                                                         // Set the incoming parameters
                                                         SetParameters(origFloor, obj.Parameters, doc);
                                                     }
                                                     catch (Exception ex) // There was an error in trying to recreate it.  Just delete the original and recreate the thing.
                                                     {
-                                                        TaskDialog.Show("Error", ex.Message);
                                                         flr = doc.Create.NewFloor(crvArray, floorType, lvl, false);
 
                                                         // Assign the parameters in the new floor to match the original floor object.
@@ -2735,6 +2779,7 @@ namespace LMNA.Lyrebird
                                                         Parameter p = roof.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM);
                                                         p.Set(offset);
                                                     }
+
                                                     doc.Delete(origRoof.Id);
 
                                                     // Set the new parameters
@@ -2745,19 +2790,9 @@ namespace LMNA.Lyrebird
                                                 }
                                                 else // The curves qty lines up, lets try to modify the roof sketch so we don't have to replace it.
                                                 {
-                                                    try
+                                                    if (obj.CurveIds != null && obj.CurveIds.Count > 0)
                                                     {
-                                                        int crvCount = 0;
-                                                        foreach (ModelCurve l in mLines)
-                                                        {
-                                                            LocationCurve lc = l.Location as LocationCurve;
-                                                            lc.Curve = crvArray.get_Item(crvCount);
-                                                            crvCount++;
-                                                        }
-                                                        SetParameters(origRoof, obj.Parameters, doc);
-                                                    }
-                                                    catch // Modificaiton failed, lets just create a new roof.
-                                                    {
+                                                        // Just recreate the roof
                                                         roof = doc.Create.NewFootPrintRoof(crvArray, lvl, roofType, out roofProfile);
 
                                                         // Match parameters from the original roof to it's new iteration.
@@ -2790,7 +2825,7 @@ namespace LMNA.Lyrebird
                                                             }
                                                             catch (Exception ex)
                                                             {
-                                                              Debug.WriteLine(ex.Message);
+                                                                Debug.WriteLine(ex.Message);
                                                             }
                                                         }
 
@@ -2807,6 +2842,86 @@ namespace LMNA.Lyrebird
                                                         AssignGuid(roof, uniqueId, instanceSchema);
 
                                                         doc.Delete(origRoof.Id);
+                                                    }
+                                                    else
+                                                    {
+                                                        try
+                                                        {
+                                                            int crvCount = 0;
+                                                            foreach (ModelCurve l in mLines)
+                                                            {
+                                                                LocationCurve lc = l.Location as LocationCurve;
+                                                                lc.Curve = crvArray.get_Item(crvCount);
+                                                                crvCount++;
+                                                            }
+
+                                                            // Change the family and symbol if necessary
+                                                            if (origRoof.RoofType.Name != roofType.Name)
+                                                            {
+                                                                try
+                                                                {
+                                                                    origRoof.RoofType = roofType;
+                                                                }
+                                                                catch (Exception ex)
+                                                                {
+                                                                    Debug.WriteLine(ex.Message);
+                                                                }
+                                                            }
+
+                                                            SetParameters(origRoof, obj.Parameters, doc);
+                                                        }
+                                                        catch // Modificaiton failed, lets just create a new roof.
+                                                        {
+                                                            roof = doc.Create.NewFootPrintRoof(crvArray, lvl, roofType, out roofProfile);
+
+                                                            // Match parameters from the original roof to it's new iteration.
+                                                            foreach (Parameter p in origRoof.Parameters)
+                                                            {
+                                                                try
+                                                                {
+                                                                    Parameter newParam = roof.get_Parameter(p.Definition.Name);
+                                                                    if (newParam != null)
+                                                                    {
+                                                                        switch (newParam.StorageType)
+                                                                        {
+                                                                            case StorageType.Double:
+                                                                                newParam.Set(p.AsDouble());
+                                                                                break;
+                                                                            case StorageType.ElementId:
+                                                                                newParam.Set(p.AsElementId());
+                                                                                break;
+                                                                            case StorageType.Integer:
+                                                                                newParam.Set(p.AsInteger());
+                                                                                break;
+                                                                            case StorageType.String:
+                                                                                newParam.Set(p.AsString());
+                                                                                break;
+                                                                            default:
+                                                                                newParam.Set(p.AsString());
+                                                                                break;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                catch (Exception ex)
+                                                                {
+                                                                    Debug.WriteLine(ex.Message);
+                                                                }
+                                                            }
+
+                                                            if (Math.Abs(offset - 0) > double.Epsilon)
+                                                            {
+                                                                Parameter p = roof.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM);
+                                                                p.Set(offset);
+                                                            }
+
+                                                            // Set the parameters from the incoming data
+                                                            SetParameters(roof, obj.Parameters, doc);
+
+                                                            // Assign the GH InstanceGuid
+                                                            AssignGuid(roof, uniqueId, instanceSchema);
+
+                                                            doc.Delete(origRoof.Id);
+                                                        }
                                                     }
                                                 }
                                             }
@@ -3017,7 +3132,19 @@ namespace LMNA.Lyrebird
 
             foreach (LyrebirdCurve lbc in curves)
             {
-                if (lbc.CurveType == "Arc")
+                if (lbc.CurveType == "Circle")
+                {
+                    XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                    XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                    XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
+                    XYZ pt4 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Z, lengthDUT));
+                    XYZ pt5 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Z, lengthDUT));
+                    Arc arc1 = Arc.Create(pt1, pt3, pt2);
+                    Arc arc2 = Arc.Create(pt3, pt5, pt4);
+                    crvArray.Append(arc1);
+                    crvArray.Append(arc2);
+                }
+                else if (lbc.CurveType == "Arc")
                 {
                     XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
                     XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));

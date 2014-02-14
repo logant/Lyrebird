@@ -58,13 +58,10 @@ namespace LMNA.Lyrebird.GH
                     RevitObject[] temp = channel.FamilyNames().ToArray();
                     if (temp != null && temp.Any())
                         familyNames = channel.FamilyNames().ToList();
-                    else if (temp == null)
-                    {
-                        MessageBox.Show("the array is null");
-                    }
                     else
                     {
-                        MessageBox.Show("The array is empty");
+                        MessageBox.Show("The Lyrebird Service for Revit could not be found.  Make sure the service is turned on and try again.");
+                        this.Close();
                     }
                 }
                 catch (Exception ex)

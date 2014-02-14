@@ -7,6 +7,7 @@ using Grasshopper;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
+using Rhino.Geometry;
 
 using LMNA.Lyrebird.LyrebirdCommon;
 using System.Diagnostics;
@@ -61,7 +62,8 @@ namespace LMNA.Lyrebird.GH
 
     public class GHClient : GH_Component
     {
-        string message = "Nothing has happened";
+        string objMessage = "Nothing has happened";
+        string message = null;
         private List<RevitParameter> inputParameters = new List<RevitParameter>();
         private string familyName = "Not Selected";
         private string typeName = "Not Selected";
@@ -132,8 +134,8 @@ namespace LMNA.Lyrebird.GH
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("Msg", "Msg", "Temporary message", GH_ParamAccess.item);
-            pManager.AddTextParameter("Guid", "G", "Guids for this component instance GH", GH_ParamAccess.item);
+            pManager.AddTextParameter("Selected Object", "Obj", "Object information that Lyrebird will create or modify", GH_ParamAccess.item);
+            pManager.AddTextParameter("Message", "Msg", "Failure or warning messages", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -154,7 +156,7 @@ namespace LMNA.Lyrebird.GH
             // Make sure the family and type is set before running the command.
             if (runCommand && (familyName == null || familyName == "Not Selected"))
             {
-                System.Windows.MessageBox.Show("Please select a family/type by double-clicking on the component before running the command.");
+                message = "Please select a family/type by double-clicking on the component before running the command.";
             }
             else if (runCommand)
             {
@@ -255,15 +257,15 @@ namespace LMNA.Lyrebird.GH
                             if (curves.Branches.Count == curves.DataCount)
                             {
                                 // Determine if the curve is a closed planar curve
-                                Rhino.Geometry.Curve tempCrv = curves.Branches[0][0].Value;
+                                Curve tempCrv = curves.Branches[0][0].Value;
                                 if (tempCrv.IsPlanar() && tempCrv.IsClosed)
                                 {
                                     // Closed planar curve
                                     List<RevitObject> tempObjs = new List<RevitObject>();
                                     for (int i = 0; i < curves.Branches.Count; i++)
                                     {
-                                        Rhino.Geometry.Curve crv = curves[i][0].Value;
-                                        List<Rhino.Geometry.Curve> rCurves = new List<Rhino.Geometry.Curve>();
+                                        Curve crv = curves[i][0].Value;
+                                        List<Curve> rCurves = new List<Curve>();
                                         bool getCrvs = CurveSegments(rCurves, crv, true);
                                         if (rCurves.Count > 0)
                                         {
@@ -297,12 +299,12 @@ namespace LMNA.Lyrebird.GH
                                     for (int i = 0; i < curves.Branches.Count; i++)
                                     {
 
-                                        Rhino.Geometry.Curve ghc = curves.Branches[i][0].Value;
+                                        Curve ghc = curves.Branches[i][0].Value;
                                         // Test that there is only one curve segment
-                                        Rhino.Geometry.PolyCurve polycurve = ghc as Rhino.Geometry.PolyCurve;
+                                        PolyCurve polycurve = ghc as PolyCurve;
                                         if (polycurve != null)
                                         {
-                                            Rhino.Geometry.Curve[] segments = polycurve.Explode();
+                                            Curve[] segments = polycurve.Explode();
                                             if (segments.Count() != 1)
                                             {
                                                 break;
@@ -335,9 +337,133 @@ namespace LMNA.Lyrebird.GH
                             }
                             else
                             {
-                                // Inform the user they need to graft their inputs.  Only one curve per branch
-                                System.Windows.Forms.MessageBox.Show("Warning:\n\nEach Branch represents an object, " + 
-                                    "so curve based elements should be grafted so that each curve is on it's own branch.");
+                                // Make sure all of the curves in each branch are closed
+                                bool allClosed = true;
+                                DataTree<CurveCheck> crvTree = new DataTree<CurveCheck>();
+                                for (int i = 0; i < curves.Branches.Count; i++)
+                                {
+                                    List<GH_Curve> ghCrvs = curves.Branches[i];
+                                    List<CurveCheck> checkedcurves = new List<CurveCheck>();
+                                    GH_Path path = new GH_Path(i);
+                                    for (int j = 0; j < ghCrvs.Count; j++)
+                                    {
+                                        Curve c = ghCrvs[j].Value;
+                                        if (c.IsClosed)
+                                        {
+                                            AreaMassProperties amp = AreaMassProperties.Compute(c);
+                                            if (amp != null)
+                                            {
+                                                double area = amp.Area;
+                                                CurveCheck cc = new CurveCheck(c, area);
+                                                checkedcurves.Add(cc);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            allClosed = false;
+                                        }
+                                    }
+                                    if (allClosed)
+                                    {
+                                        // Sort the curves by area
+                                        checkedcurves.Sort((x, y) => x.Area.CompareTo(y.Area));
+                                        checkedcurves.Reverse();
+                                        foreach (CurveCheck cc in checkedcurves)
+                                        {
+                                            crvTree.Add(cc, path);
+                                        }
+                                    }
+                                }
+
+                                if (allClosed)
+                                {
+                                    // Determine if the smaller profiles are within the larger
+                                    bool allInterior = true;
+                                    List<RevitObject> tempObjs = new List<RevitObject>();
+                                    for (int i = 0; i < crvTree.Branches.Count; i++)
+                                    {
+                                        try
+                                        {
+                                            List<int> crvSegmentIds = new List<int>();
+                                            List<LyrebirdCurve> lbCurves = new List<LyrebirdCurve>();
+                                            List<CurveCheck> checkedCrvs = crvTree.Branches[i];
+                                            Curve outerProfile = checkedCrvs[0].Curve;
+                                            double outerArea = checkedCrvs[0].Area;
+                                            List<Curve> planarCurves = new List<Curve>();
+                                            planarCurves.Add(outerProfile);
+                                            double innerArea = 0.0;
+                                            for (int j = 1; j < checkedCrvs.Count; j++)
+                                            {
+                                                planarCurves.Add(checkedCrvs[j].Curve);
+                                                innerArea += checkedCrvs[j].Area;
+                                            }
+                                            // Try to create a planar surface
+                                            IEnumerable<Curve> surfCurves = planarCurves;
+                                            Brep[] b = Brep.CreatePlanarBreps(surfCurves);
+                                            if (b.Count() == 1)
+                                            {
+                                                // Test the areas
+                                                double brepArea = b[0].GetArea();
+                                                double calcArea = outerArea - innerArea;
+                                                double diff = (brepArea - calcArea) / calcArea;
+
+                                                if (diff < 0.1)
+                                                {
+                                                    // The profiles probably are all interior
+                                                    foreach (CurveCheck cc in checkedCrvs)
+                                                    {
+                                                        Curve c = cc.Curve;
+                                                        List<Curve> rCurves = new List<Curve>();
+                                                        bool getCrvs = CurveSegments(rCurves, c, true);
+
+                                                        if (rCurves.Count > 0)
+                                                        {
+                                                            int crvSeg = rCurves.Count;
+                                                            crvSegmentIds.Add(crvSeg);
+                                                            foreach (Curve rc in rCurves)
+                                                            {
+                                                                LyrebirdCurve lbc;
+                                                                lbc = GetLBCurve(rc);
+                                                                lbCurves.Add(lbc);
+                                                            }
+                                                        }
+                                                    }
+                                                    RevitObject ro = new RevitObject();
+                                                    ro.Curves = lbCurves;
+                                                    ro.FamilyName = familyName;
+                                                    ro.Category = category;
+                                                    ro.CategoryId = categoryId;
+                                                    ro.TypeName = typeName;
+                                                    ro.Origin = null;
+                                                    ro.GHPath = crvTree.Paths[i].ToString();
+                                                    ro.GHScaleFactor = scale.ScaleFactor;
+                                                    ro.GHScaleName = scale.ScaleName;
+                                                    ro.CurveIds = crvSegmentIds;
+                                                    tempObjs.Add(ro);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                allInterior = false;
+                                                message = "Warning:\n\nEach Branch represents an object, " +
+                                                "so curve based elements should be grafted so that each curve is on it's own branch, or all curves on a branch should " +
+                                            "be interior to the largest, outer boundary.";
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            allInterior = false;
+                                            // Inform the user they need to graft their inputs.  Only one curve per branch
+                                            message = "Warning:\n\nEach Branch represents an object, " +
+                                                "so curve based elements should be grafted so that each curve is on it's own branch, or all curves on a branch should " +
+                                            "be interior to the largest, outer boundary.";
+                                        }
+                                    }
+                                    if (tempObjs.Count > 0)
+                                    {
+                                        obj = tempObjs;
+                                    }
+                                }
                             }
                         }
                         #endregion
@@ -413,7 +539,23 @@ namespace LMNA.Lyrebird.GH
                         // Send the data to Revit to create and/or modify family instances.
                         if (obj != null && obj.Count > 0)
                         {
-                            channel.CreateOrModify(obj, InstanceGuid);
+                            try
+                            {
+                                string docName = channel.DocumentName();
+                                if (docName == null || docName == string.Empty)
+                                {
+                                    message = "Could not contact the lyrebird server.  Make sure it's running and try again.";
+                                }
+                                else
+                                {
+                                    channel.CreateOrModify(obj, InstanceGuid);
+                                    message = "Data sent to the lyrebird server.";
+                                }
+                            }
+                            catch
+                            {
+                                message = "Could not contact the lyrebird server.  Make sure it's running and try again.";
+                            }
                         }
                         channel.Dispose();
                         try
@@ -426,7 +568,7 @@ namespace LMNA.Lyrebird.GH
                     }
                     else
                     {
-                        System.Windows.Forms.MessageBox.Show("Error\n" + "The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.");
+                        message = "Error\n" + "The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.";
                     }
                 }
             }
@@ -448,15 +590,15 @@ namespace LMNA.Lyrebird.GH
                     }
                     sb.AppendLine(string.Format("Parameter{0}: {1}  /  {2}  /  {3}", (i + 1).ToString(CultureInfo.InvariantCulture), rp.ParameterName, rp.StorageType, type));
                 }
-                message = sb.ToString();
+                objMessage = sb.ToString();
             }
             else
             {
-                message = "No data type set.  Double-click to set data type";
+                objMessage = "No data type set.  Double-click to set data type";
             }
 
-            DA.SetData(0, message);
-            DA.SetData(1, InstanceGuid.ToString());
+            DA.SetData(0, objMessage);
+            DA.SetData(1, message);
         }
 
         public override Guid ComponentGuid
@@ -490,7 +632,7 @@ namespace LMNA.Lyrebird.GH
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
-                    System.Windows.Forms.MessageBox.Show("The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.");
+                    //System.Windows.Forms.MessageBox.Show("The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.");
                 }
 
                 channel.Dispose();
@@ -564,7 +706,7 @@ namespace LMNA.Lyrebird.GH
             if (inputParameters.Count > 0)
             {
                 // Find out how many parameters there are and if inputs should be added or removed.
-                if (inputParameters.Count == Params.Input.Count - 7)
+                if (inputParameters.Count == Params.Input.Count - 6)
                 {
                     // Parameters quantities match up with inputs, do nothing
                     RefreshParameters();
@@ -716,7 +858,7 @@ namespace LMNA.Lyrebird.GH
                 RevitObject ro = current[i];
                 try
                 {
-                    Rhino.Geometry.Vector3d v = orientations[i][0].Value;
+                    Vector3d v = orientations[i][0].Value;
 
                     LyrebirdPoint p = new LyrebirdPoint {X = v.X, Y = v.Y, Z = v.Z};
                     ro.Orientation = p;
@@ -739,7 +881,7 @@ namespace LMNA.Lyrebird.GH
                 RevitObject ro = current[i];
                 try
                 {
-                    Rhino.Geometry.Vector3d v = orientations[i][0].Value;
+                    Vector3d v = orientations[i][0].Value;
 
                     LyrebirdPoint p = new LyrebirdPoint {X = v.X, Y = v.Y, Z = v.Z};
                     ro.FaceOrientation = p;
@@ -753,10 +895,10 @@ namespace LMNA.Lyrebird.GH
             return tempObj;
         }
 
-        private LyrebirdCurve GetLBCurve(Rhino.Geometry.Curve crv)
+        private LyrebirdCurve GetLBCurve(Curve crv)
         {
             LyrebirdCurve lbc = null;
-
+            
             List<LyrebirdPoint> points = new List<LyrebirdPoint>();
             if (crv.IsLinear())
             {
@@ -764,10 +906,20 @@ namespace LMNA.Lyrebird.GH
                 points.Add(new LyrebirdPoint(crv.PointAtStart.X, crv.PointAtStart.Y, crv.PointAtStart.Z));
                 points.Add(new LyrebirdPoint(crv.PointAtEnd.X, crv.PointAtEnd.Y, crv.PointAtEnd.Z));
                 lbc = new LyrebirdCurve(points, "Line");
-
+            }
+            else if (crv.IsCircle())
+            {
+                crv.Domain = new Interval(0, 1);
+                points.Add(new LyrebirdPoint(crv.PointAtStart.X, crv.PointAtStart.Y, crv.PointAtStart.Z));
+                points.Add(new LyrebirdPoint(crv.PointAt(0.25).X, crv.PointAt(0.25).Y, crv.PointAt(0.25).Z));
+                points.Add(new LyrebirdPoint(crv.PointAt(0.5).X, crv.PointAt(0.5).Y, crv.PointAt(0.5).Z));
+                points.Add(new LyrebirdPoint(crv.PointAt(0.75).X, crv.PointAt(0.75).Y, crv.PointAt(0.75).Z));
+                points.Add(new LyrebirdPoint(crv.PointAtEnd.X, crv.PointAtEnd.Y, crv.PointAtEnd.Z));
+                lbc = new LyrebirdCurve(points, "Circle");
             }
             else if (crv.IsArc())
             {
+                crv.Domain = new Interval(0, 1);
                 // standard arc element
                 points.Add(new LyrebirdPoint(crv.PointAtStart.X, crv.PointAtStart.Y, crv.PointAtStart.Z));
                 points.Add(new LyrebirdPoint(crv.PointAt(0.5).X, crv.PointAt(0.5).Y, crv.PointAt(0.5).Z));
@@ -779,14 +931,14 @@ namespace LMNA.Lyrebird.GH
                 // Spline
                 if (crv.Degree >= 3)
                 {
-                    Rhino.Geometry.NurbsCurve nc = crv as Rhino.Geometry.NurbsCurve;
+                    NurbsCurve nc = crv as NurbsCurve;
                     if (nc != null)
                     {
                         List<LyrebirdPoint> lbPoints = new List<LyrebirdPoint>();
                         List<double> weights = new List<double>();
                         List<double> knots = new List<double>();
 
-                        foreach (Rhino.Geometry.ControlPoint cp in nc.Points)
+                        foreach (ControlPoint cp in nc.Points)
                         {
                             LyrebirdPoint pt = new LyrebirdPoint(cp.Location.X, cp.Location.Y, cp.Location.Z);
                             double weight = cp.Weight;
@@ -804,8 +956,8 @@ namespace LMNA.Lyrebird.GH
                             }
                             knots.Add(knot);
                         }
-                        
-                        lbc = new LyrebirdCurve(lbPoints, weights, knots, nc.Degree, nc.IsPeriodic)  { CurveType = "Spline" };
+
+                        lbc = new LyrebirdCurve(lbPoints, weights, knots, nc.Degree, nc.IsPeriodic) { CurveType = "Spline" };
                     }
                 }
                 else
@@ -815,7 +967,7 @@ namespace LMNA.Lyrebird.GH
                     List<double> weights = new List<double>();
                     for (int i = 0; i <= 100; i++)
                     {
-                        Rhino.Geometry.Point3d pt = crv.PointAtNormalizedLength(i * incr);
+                        Point3d pt = crv.PointAtNormalizedLength(i * incr);
                         LyrebirdPoint lbp = new LyrebirdPoint(pt.X, pt.Y, pt.Z);
                         weights.Add(1.0);
                         pts.Add(lbp);
@@ -828,40 +980,40 @@ namespace LMNA.Lyrebird.GH
             return lbc;
         }
 
-        protected bool CurveSegments(List<Rhino.Geometry.Curve> L, Rhino.Geometry.Curve crv, bool recursive)
+        protected bool CurveSegments(List<Curve> L, Curve crv, bool recursive)
         {
             if (crv == null) { return false; }
-            Rhino.Geometry.PolyCurve polycurve = crv as Rhino.Geometry.PolyCurve;
+            PolyCurve polycurve = crv as PolyCurve;
             if (polycurve != null)
             {
                 if (recursive) { polycurve.RemoveNesting(); }
-                Rhino.Geometry.Curve[] segments = polycurve.Explode();
+                Curve[] segments = polycurve.Explode();
                 if (segments == null) { return false; }
                 if (segments.Length == 0) { return false; }
                 if (recursive)
                 {
-                    foreach (Rhino.Geometry.Curve S in segments)
+                    foreach (Curve S in segments)
                     {
                         CurveSegments(L, S, true);
                     }
                 }
                 else
                 {
-                    foreach (Rhino.Geometry.Curve S in segments)
+                    foreach (Curve S in segments)
                     {
-                        L.Add(S.DuplicateShallow() as Rhino.Geometry.Curve);
+                        L.Add(S.DuplicateShallow() as Curve);
                     }
                 }
                 return true;
             }
-            Rhino.Geometry.PolylineCurve polyline = crv as Rhino.Geometry.PolylineCurve;
+            PolylineCurve polyline = crv as PolylineCurve;
             if (polyline != null)
             {
                 if (recursive)
                 {
                     for (int i = 0; i < (polyline.PointCount - 1); i++)
                     {
-                        L.Add(new Rhino.Geometry.LineCurve(polyline.Point(i), polyline.Point(i + 1)));
+                        L.Add(new LineCurve(polyline.Point(i), polyline.Point(i + 1)));
                     }
                 }
                 else
@@ -870,38 +1022,38 @@ namespace LMNA.Lyrebird.GH
                 }
                 return true;
             }
-            Rhino.Geometry.Polyline p;
+            Polyline p;
             if (crv.TryGetPolyline(out p))
             {
                 if (recursive)
                 {
                     for (int i = 0; i < (p.Count - 1); i++)
                     {
-                        L.Add(new Rhino.Geometry.LineCurve(p[i], p[i + 1]));
+                        L.Add(new LineCurve(p[i], p[i + 1]));
                     }
                 }
                 else
                 {
-                    L.Add(new Rhino.Geometry.PolylineCurve(p));
+                    L.Add(new PolylineCurve(p));
                 }
                 return true;
             }
             //Maybe it's a LineCurve?
-            Rhino.Geometry.LineCurve line = crv as Rhino.Geometry.LineCurve;
+            LineCurve line = crv as LineCurve;
             if (line != null)
             {
                 L.Add(line.DuplicateCurve());
                 return true;
             }
             //It might still be an ArcCurve...
-            Rhino.Geometry.ArcCurve arc = crv as Rhino.Geometry.ArcCurve;
+            ArcCurve arc = crv as ArcCurve;
             if (arc != null)
             {
                 L.Add(arc.DuplicateCurve());
                 return true;
             }
             //Nothing else worked, lets assume it's a nurbs curve and go from there...
-            Rhino.Geometry.NurbsCurve nurbs = crv.ToNurbsCurve();
+            NurbsCurve nurbs = crv.ToNurbsCurve();
             if (nurbs == null) { return false; }
             double t0 = nurbs.Domain.Min;
             double t1 = nurbs.Domain.Max;
@@ -909,20 +1061,32 @@ namespace LMNA.Lyrebird.GH
             do
             {
               double t;
-              if (!nurbs.GetNextDiscontinuity(Rhino.Geometry.Continuity.C1_locus_continuous, t0, t1, out t)) { break; }
-                Rhino.Geometry.Interval trim = new Rhino.Geometry.Interval(t0, t);
+              if (!nurbs.GetNextDiscontinuity(Continuity.C1_locus_continuous, t0, t1, out t)) { break; }
+                Interval trim = new Interval(t0, t);
                 if (trim.Length < 1e-10)
                 {
                     t0 = t;
                     continue;
                 }
-                Rhino.Geometry.Curve M = nurbs.DuplicateCurve();
+                Curve M = nurbs.DuplicateCurve();
                 M = M.Trim(trim);
                 if (M.IsValid) { L.Add(M); }
                 t0 = t;
             } while (true);
             if (L.Count == LN) { L.Add(nurbs); }
             return true;
+        }
+    }
+
+    public class CurveCheck
+    {
+        public Curve Curve { get; set; }
+        public double Area { get; set; }
+
+        public CurveCheck(Curve crv, double area)
+        {
+            Curve = crv;
+            Area = area;
         }
     }
 }
