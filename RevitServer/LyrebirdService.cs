@@ -2317,12 +2317,15 @@ namespace LMNA.Lyrebird
                                             TaskDialogResult result = warningDlg.Show();
                                             if (result == TaskDialogResult.CommandLink1)
                                             {
+                                                replace = true;
                                                 supressedReplace = true;
+                                                supressedModify = true;
                                                 supress = warningDlg.WasVerificationChecked();
                                             }
                                             if (result == TaskDialogResult.CommandLink2)
                                             {
                                                 supressedReplace = false;
+                                                supressedModify = true;
                                                 supress = warningDlg.WasVerificationChecked();
                                             }
                                             if (result == TaskDialogResult.CommandLink3)
@@ -2334,6 +2337,7 @@ namespace LMNA.Lyrebird
                                         }
                                         // A list of curves.  These should equate a closed planar curve from GH.
                                         // Determine category and create based on that.
+                                        #region walls
                                         if (obj.CategoryId == -2000011)
                                         {
                                             // Create line based wall
@@ -2477,7 +2481,8 @@ namespace LMNA.Lyrebird
                                                     }
                                                     catch (Exception ex)
                                                     {
-                                                      Debug.WriteLine(ex.Message);
+                                                        //TaskDialog.Show("Errorsz", ex.Message);
+                                                        Debug.WriteLine(ex.Message);
                                                     }
                                                 }
 
@@ -2487,6 +2492,10 @@ namespace LMNA.Lyrebird
                                                     p.Set(offset);
                                                 }
                                                 doc.Delete(origWall.Id);
+
+                                                // Assign the parameters
+                                                SetParameters(w, obj.Parameters, doc);
+
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(w, uniqueId, instanceSchema);
                                             }
@@ -2506,11 +2515,14 @@ namespace LMNA.Lyrebird
                                                       Debug.WriteLine(ex.Message);
                                                     }
                                                 }
-                                            }
 
-                                            // Assign the parameters
-                                            SetParameters(w, obj.Parameters, doc);
+                                                // Assign the parameters
+                                                SetParameters(w, obj.Parameters, doc);
+                                            }
                                         }
+                                        #endregion
+
+                                        #region floors
                                         else if (obj.CategoryId == -2000032)
                                         {
                                             // Create a profile based floor
@@ -2608,6 +2620,10 @@ namespace LMNA.Lyrebird
                                                         p.Set(offset);
                                                     }
                                                     doc.Delete(origFloor.Id);
+
+                                                    // Assign the parameters
+                                                    SetParameters(flr, obj.Parameters, doc);
+
                                                     // Assign the GH InstanceGuid
                                                     AssignGuid(flr, uniqueId, instanceSchema);
                                                 }
@@ -2708,11 +2724,11 @@ namespace LMNA.Lyrebird
                                                       Debug.WriteLine(ex.Message);
                                                     }
                                                 }
+                                                // Assign the parameters
+                                                SetParameters(flr, obj.Parameters, doc);
                                             }
-
-                                            // Assign the parameters
-                                            SetParameters(flr, obj.Parameters, doc);
                                         }
+                                        #endregion
                                         else if (obj.CategoryId == -2000035)
                                         {
                                             // Create a RoofExtrusion
@@ -2945,7 +2961,7 @@ namespace LMNA.Lyrebird
                                                     }
                                                 }
                                             }
-                                            else // Only update the parameters
+                                            else if(supressedModify) // Only update the parameters
                                             {
                                                 roof = doc.GetElement(existingElems[i]) as FootPrintRoof;
 
@@ -2961,10 +2977,9 @@ namespace LMNA.Lyrebird
                                                       Debug.WriteLine(ex.Message);
                                                     }
                                                 }
+                                                // Assign the parameters
+                                                SetParameters(roof, obj.Parameters, doc);
                                             }
-
-                                            // Assign the parameters
-                                            SetParameters(roof, obj.Parameters, doc);
                                         }
                                     }
                                     #endregion
