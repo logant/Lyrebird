@@ -22,6 +22,21 @@ namespace LMNA.Lyrebird
         private List<RevitParameter> parameters = new List<RevitParameter>();
         //private List<LyrebirdId> uniqueIds = new List<LyrebirdId>();
 
+        private int modBehavior;
+        private int runId;
+
+        public int ModifyBehavior
+        {
+            get { return modBehavior; }
+            set { modBehavior = value; }
+        }
+
+        public int RunId
+        {
+            get { return runId; }
+            set { runId = value; }
+        }
+
         DisplayUnitType lengthDUT;
         DisplayUnitType areaDUT;
         DisplayUnitType volumeDUT;
@@ -32,7 +47,7 @@ namespace LMNA.Lyrebird
 
         private static readonly object _locker = new object();
 
-        private const int WAIT_TIMEOUT = 200;
+        private const int WAIT_TIMEOUT = 1000;
 
         public List<RevitObject> GetFamilyNames()
         {
@@ -94,7 +109,7 @@ namespace LMNA.Lyrebird
                 {
                   Debug.WriteLine(exception.Message);
                 }
-            Monitor.Wait(_locker, WAIT_TIMEOUT);
+            Monitor.Wait(_locker, Properties.Settings.Default.infoTimeout);
             }
             return familyNames;
         }
@@ -170,7 +185,7 @@ namespace LMNA.Lyrebird
                 {
                   Debug.WriteLine(exception.Message);
                 }
-            Monitor.Wait(_locker, WAIT_TIMEOUT);
+            Monitor.Wait(_locker, Properties.Settings.Default.infoTimeout);
             }
             return typeNames;
         }
@@ -416,8 +431,6 @@ namespace LMNA.Lyrebird
                     else
                     {
                         // Regular family.  Proceed to get all parameters
-                        // TODO: There are different options for different hostings.  
-                        //       Make sure you account for this while creating the instance to get the inst parameters.
                         FilteredElementCollector familyCollector = new FilteredElementCollector(doc);
                         familyCollector.OfClass(typeof(Family));
                         foreach (Family f in familyCollector)
@@ -472,7 +485,6 @@ namespace LMNA.Lyrebird
                                                     // regular creation.  Some parameters will be missing
                                                     fi = doc.Create.NewFamilyInstance(XYZ.Zero, fs, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
                                                 }
-                                                //fi = doc.Create.NewFamilyInstance(origin, fs, host, level, false)
                                             }
                                             else if (hostType == 2)
                                             {
@@ -496,7 +508,7 @@ namespace LMNA.Lyrebird
                                                 }
                                                 catch (Exception ex)
                                                 {
-                                                    // Failed to create the wall, no instance parameters will be found
+                                                    // Failed to create the floor, no instance parameters will be found
                                                     Debug.WriteLine(ex.Message);
                                                 }
                                                 if (floor != null)
@@ -505,21 +517,190 @@ namespace LMNA.Lyrebird
                                                 }
                                                 else
                                                 {
-                                                    // regular creation.  SOme parameters will be missing
+                                                    // regular creation.  Some parameters will be missing
                                                     fi = doc.Create.NewFamilyInstance(XYZ.Zero, fs, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
                                                 }
                                             }
                                             else if (hostType == 3)
                                             {
                                                 // Ceiling Hosted (might be difficult)
+                                                // Try to find a ceiling
+                                                FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
+                                                Level l = lvlCollector.OfClass(typeof(Level)).ToElements().OfType<Level>().FirstOrDefault();
+                                                FilteredElementCollector ceilingCollector = new FilteredElementCollector(doc);
+                                                Ceiling ceiling = ceilingCollector.OfClass(typeof(Ceiling)).ToElements().OfType<Ceiling>().FirstOrDefault();
+                                                if (ceiling != null)
+                                                {
+                                                    // Find a point on the ceiling
+                                                    Options opt = new Options();
+                                                    opt.ComputeReferences = true;
+                                                    GeometryElement ge = ceiling.get_Geometry(opt);
+                                                    List<List<XYZ>> verticePoints = new List<List<XYZ>>();
+                                                    foreach (GeometryObject go in ge)
+                                                    {
+                                                        Solid solid = go as Solid;
+                                                        if (null == solid || 0 == solid.Faces.Size)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        bool foundFace = false;
+                                                        PlanarFace planarFace = null;
+                                                        double faceArea = 0;
+                                                        foreach (Face face in solid.Faces)
+                                                        {
+
+                                                            PlanarFace pf = null;
+                                                            try
+                                                            {
+                                                                pf = face as PlanarFace;
+                                                            }
+                                                            catch
+                                                            {
+                                                            }
+                                                            if (pf != null)
+                                                            {
+                                                                if (pf.Area > faceArea)
+                                                                {
+                                                                    planarFace = pf;
+                                                                }
+                                                            }
+                                                        }
+                                                        if (planarFace != null)
+                                                        {
+                                                            Mesh mesh = planarFace.Triangulate();
+                                                            int triCnt = mesh.NumTriangles;
+                                                            MeshTriangle bigTriangle = null;
+                                                            for (int tri = 0; tri < triCnt; tri++)
+                                                            {
+                                                                if (bigTriangle == null)
+                                                                {
+
+                                                                    bigTriangle = mesh.get_Triangle(tri);
+                                                                }
+                                                                else
+                                                                {
+                                                                    MeshTriangle mt = mesh.get_Triangle(tri);
+                                                                    double area = Math.Abs(((mt.get_Vertex(0).X * (mt.get_Vertex(1).Y - mt.get_Vertex(2).Y)) + (mt.get_Vertex(1).X * (mt.get_Vertex(2).Y - mt.get_Vertex(0).Y)) + (mt.get_Vertex(2).X * (mt.get_Vertex(0).Y - mt.get_Vertex(1).Y))) / 2);
+                                                                    double bigTriArea = Math.Abs(((bigTriangle.get_Vertex(0).X * (bigTriangle.get_Vertex(1).Y - bigTriangle.get_Vertex(2).Y)) + (bigTriangle.get_Vertex(1).X * (bigTriangle.get_Vertex(2).Y - bigTriangle.get_Vertex(0).Y)) + (bigTriangle.get_Vertex(2).X * (bigTriangle.get_Vertex(0).Y - bigTriangle.get_Vertex(1).Y))) / 2);
+                                                                    if (area > bigTriArea)
+                                                                    {
+                                                                        bigTriangle = mt;
+                                                                    }
+                                                                }
+                                                            }
+                                                            if (bigTriangle != null)
+                                                            {
+                                                                double test = Math.Abs(((bigTriangle.get_Vertex(0).X * (bigTriangle.get_Vertex(1).Y - bigTriangle.get_Vertex(2).Y)) + (bigTriangle.get_Vertex(1).X * (bigTriangle.get_Vertex(2).Y - bigTriangle.get_Vertex(0).Y)) + (bigTriangle.get_Vertex(2).X * (bigTriangle.get_Vertex(0).Y - bigTriangle.get_Vertex(1).Y))) / 2);
+                                                            }
+                                                            try
+                                                            {
+                                                                List<XYZ> ptList = new List<XYZ>();
+                                                                ptList.Add(bigTriangle.get_Vertex(0));
+                                                                ptList.Add(bigTriangle.get_Vertex(1));
+                                                                ptList.Add(bigTriangle.get_Vertex(2));
+                                                                verticePoints.Add(ptList);
+                                                            }
+                                                            catch
+                                                            {
+                                                            }
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    if (verticePoints.Count > 0)
+                                                    {
+                                                        List<XYZ> vertices = verticePoints[0];
+                                                        XYZ midXYZ = vertices[1] + (0.5 * (vertices[2] - vertices[1]));
+                                                        XYZ centerPt = vertices[0] + (0.666667 * (midXYZ - vertices[0]));
+
+                                                        if (ceiling != null)
+                                                        {
+                                                            fi = doc.Create.NewFamilyInstance(centerPt, fs, ceiling as Element, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                                        }
+                                                        else
+                                                        {
+                                                            // regular creation.  Some parameters will be missing
+                                                            fi = doc.Create.NewFamilyInstance(XYZ.Zero, fs, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                                        }
+                                                        
+                                                    }
+                                                }
                                             }
                                             else if (hostType == 4)
                                             {
                                                 // Roof Hosted
+                                                // Temporary roof
+                                                FootPrintRoof roof = null;
+                                                FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
+                                                Level l = lvlCollector.OfClass(typeof(Level)).ToElements().OfType<Level>().FirstOrDefault();
+                                                FilteredElementCollector roofTypeCollector = new FilteredElementCollector(doc);
+                                                RoofType rt = roofTypeCollector.OfClass(typeof(RoofType)).ToElements().OfType<RoofType>().FirstOrDefault();
+                                                try
+                                                {
+                                                    Curve c1 = Line.CreateBound(new XYZ(0, 0, 0), new XYZ(1, 0, 0));
+                                                    Curve c2 = Line.CreateBound(new XYZ(0, 1, 0), new XYZ(1, 1, 0));
+                                                    Curve c3 = Line.CreateBound(new XYZ(1, 1, 0), new XYZ(0, 1, 0));
+                                                    Curve c4 = Line.CreateBound(new XYZ(0, 1, 0), new XYZ(0, 0, 0));
+                                                    CurveArray profile = new CurveArray();
+                                                    profile.Append(c1);
+                                                    profile.Append(c2);
+                                                    profile.Append(c3);
+                                                    profile.Append(c4);
+                                                    ModelCurveArray roofProfile = new ModelCurveArray();
+                                                    roof = doc.Create.NewFootPrintRoof(profile, l, rt, out roofProfile);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    // Failed to create the roof, no instance parameters will be found
+                                                    Debug.WriteLine(ex.Message);
+                                                }
+
+                                                if (roof != null)
+                                                {
+                                                    fi = doc.Create.NewFamilyInstance(new XYZ(0, 0, 0), fs, roof as Element, l, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                                }
+                                                else
+                                                {
+                                                    // regular creation.  Some parameters will be missing
+                                                    fi = doc.Create.NewFamilyInstance(XYZ.Zero, fs, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                                }
                                             }
                                             else if (hostType == 5)
                                             {
-                                                // Face Based.
+                                                // temporary floor
+                                                Floor floor = null;
+                                                FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
+                                                Level l = lvlCollector.OfClass(typeof(Level)).ToElements().OfType<Level>().FirstOrDefault();
+                                                try
+                                                {
+                                                    Curve c1 = Line.CreateBound(new XYZ(0, 0, 0), new XYZ(1, 0, 0));
+                                                    Curve c2 = Line.CreateBound(new XYZ(0, 1, 0), new XYZ(1, 1, 0));
+                                                    Curve c3 = Line.CreateBound(new XYZ(1, 1, 0), new XYZ(0, 1, 0));
+                                                    Curve c4 = Line.CreateBound(new XYZ(0, 1, 0), new XYZ(0, 0, 0));
+                                                    CurveArray profile = new CurveArray();
+                                                    profile.Append(c1);
+                                                    profile.Append(c2);
+                                                    profile.Append(c3);
+                                                    profile.Append(c4);
+                                                    floor = doc.Create.NewFloor(profile, false);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    // Failed to create the floor, no instance parameters will be found
+                                                    Debug.WriteLine(ex.Message);
+                                                }
+
+                                                // Find a face on the floor to host to.
+                                                Face face = FindFace(XYZ.Zero, XYZ.BasisZ, doc);
+                                                if (face != null)
+                                                {
+                                                    fi = doc.Create.NewFamilyInstance(face, XYZ.Zero, new XYZ(0, -1, 0), fs);
+                                                }
+                                                else
+                                                {
+                                                    // regular creation.  Some parameters will be missing
+                                                    fi = doc.Create.NewFamilyInstance(XYZ.Zero, fs, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                                }
                                             }
                                             // Create a typical family instance
                                             try
@@ -579,228 +760,196 @@ namespace LMNA.Lyrebird
 
         public bool CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId)
         {
-
-            TaskContainer.Instance.EnqueueTask(uiApp =>
+            lock (_locker)
             {
-                try
+                TaskContainer.Instance.EnqueueTask(uiApp =>
                 {
-                    // Set the DisplayUnitTypes
-                    Units units = uiApp.ActiveUIDocument.Document.GetUnits();
-                    FormatOptions fo = units.GetFormatOptions(UnitType.UT_Length);
-                    lengthDUT = fo.DisplayUnits;
-                    fo = units.GetFormatOptions(UnitType.UT_Area);
-                    areaDUT = fo.DisplayUnits;
-                    fo = units.GetFormatOptions(UnitType.UT_Volume);
-                    volumeDUT = fo.DisplayUnits;
+                    try
+                    {
+                        // Set the DisplayUnitTypes
+                        Units units = uiApp.ActiveUIDocument.Document.GetUnits();
+                        FormatOptions fo = units.GetFormatOptions(UnitType.UT_Length);
+                        lengthDUT = fo.DisplayUnits;
+                        fo = units.GetFormatOptions(UnitType.UT_Area);
+                        areaDUT = fo.DisplayUnits;
+                        fo = units.GetFormatOptions(UnitType.UT_Volume);
+                        volumeDUT = fo.DisplayUnits;
 
-                    // Find existing elements
-                    List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId);
-                    
-                    TaskDialog dlg = new TaskDialog("Warning") { MainInstruction = "Incoming Data" };
-                    RevitObject existingObj = incomingObjs[0];
-                    bool profileWarning = (existingObj.CategoryId == -2000011 && existingObj.Curves.Count > 1) || existingObj.CategoryId == -2000032 || existingObj.CategoryId == -2000035;
-                    int option = 0;
-                    if (existing == null || existing.Count == 0)
-                    {
-                        option = 0;
-                        dlg.MainContent = "Data is being sent to Revit from another application using Lyrebird." +
-                            " This data will be used to create " + incomingObjs.Count.ToString(CultureInfo.InvariantCulture) + " elements.  How would you like to proceed?";
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Create new elements");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Cancel");
-                    }
-                    else if (existing != null && existing.Count == incomingObjs.Count)
-                    {
-                        option = 1;
-                        dlg.MainContent = "Data is being sent to Revit from another application using Lyrebird." +
-                            " This incoming data matches up with " + incomingObjs.Count.ToString(CultureInfo.InvariantCulture) + " elements.  How would you like to proceed?";
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Modify existing elements with incoming data");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Create new elements, ignore all exisiting.");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
-                    }
-                    else if (existing != null && existing.Count < incomingObjs.Count)
-                    {
-                        option = 2;
-                        dlg.MainContent = "Data is being sent to Revit from another application using Lyrebird." +
-                            " This incoming data matches up with " + incomingObjs.Count.ToString(CultureInfo.InvariantCulture) + " elements but includes " + (incomingObjs.Count - existing.Count).ToString(CultureInfo.InvariantCulture) +
-                            " additional elements.  How would you like to proceed?";
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Modify existing and create new elements with incoming data");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Create new elements, ignore all exisiting.");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
-                    }
-                    else if (existing != null && existing.Count > incomingObjs.Count)
-                    {
-                        option = 3;
-                        dlg.MainContent = "Data is being sent to Revit from another application using Lyrebird." +
-                            " This incoming data matches up with " + incomingObjs.Count.ToString(CultureInfo.InvariantCulture) + " elements but there are an additional " + (existing.Count - incomingObjs.Count).ToString(CultureInfo.InvariantCulture) +
-                            " in the model in addition to what's coming in.  How would you like to proceed?";
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Modify the first set of existing and delete additional elements to match incoming data");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Modify the first set of existing objects and ignore any additional elements.");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Create new elements, ignore all exisiting.");
-                        dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink4, "Cancel");
-                    }
+                        // Find existing elements
+                        List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId);
+                        // find if there's more than one run existing
+                        Schema instanceSchema = Schema.Lookup(instanceSchemaGUID);
+                        List<int> runIds = new List<int>();
+                        List<Runs> allRuns = new List<Runs>();
+                        if (instanceSchema != null)
+                        {
+                            foreach (ElementId eid in existing)
+                            {
+                                Element e = uiApp.ActiveUIDocument.Document.GetElement(eid);
+                                // Find the run ID
+                                Entity entity = e.GetEntity(instanceSchema);
+                                if (entity.IsValid())
+                                {
+                                    Field f = instanceSchema.GetField("RunID");
+                                    int tempId = entity.Get<int>(f);
+                                    if (!runIds.Contains(tempId))
+                                    {
+                                        runIds.Add(tempId);
+                                        Runs run = new Runs(tempId, "Run" + tempId.ToString());
+                                        allRuns.Add(run);
+                                    }
+                                }
+                            }
+                        }
 
-                    TaskDialogResult result = dlg.Show();
-                    if (result == TaskDialogResult.CommandLink1)
-                    {
-                        if (option == 0)
-                        {
-                            // Create new
-                            try
-                            {
-                                CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId);
-                            }
-                            catch (Exception ex)
-                            {
-                                TaskDialog.Show("Error", ex.Message);
-                            }
-                        }
-                        else if (option == 1)
-                        {
-                            // Modify
-                            try
-                            {
-                                ModifyObjects(incomingObjs, existing, uiApp.ActiveUIDocument.Document, uniqueId,
-                                            profileWarning);
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine(ex.Message);
-                            }
-                        }
-                        else if (option == 2)
-                        {
-                            // create and modify
-                            List<RevitObject> existingObjects = new List<RevitObject>();
-                            List<RevitObject> newObjects = new List<RevitObject>();
 
-                            int i = 0;
-                            Debug.Assert(existing != null, "existing != null");
-                            while (i < existing.Count)
-                            {
-                                existingObjects.Add(incomingObjs[i]);
-                                i++;
-                            }
-                            while (i < incomingObjs.Count)
-                            {
-                                newObjects.Add(incomingObjs[i]);
-                                i++;
-                            }
-                            try
-                            {
-                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document, uniqueId,
-                                            profileWarning);
-                                CreateObjects(newObjects, uiApp.ActiveUIDocument.Document, uniqueId);
-                            }
-                            catch (Exception ex)
-                            {
-                              Debug.WriteLine(ex.Message);
-                            }
-                        }
-                        else if (option == 3)
+                        if (runIds != null && runIds.Count > 0)
                         {
-                            // Modify and Delete
-                            List<RevitObject> existingObjects = new List<RevitObject>();
-                            List<ElementId> removeObjects = new List<ElementId>();
+                            runIds.Sort((x, y) => x.CompareTo(y));
+                            int lastId = 0;
+                            lastId = runIds.Last();
+                            ModifyForm mform = new ModifyForm(this, allRuns);
+                            mform.ShowDialog();
 
-                            int i = 0;
-                            while (i < incomingObjs.Count)
+                            // modBehavior = 0, Modify the selected run
+                            if (modBehavior == 0)
                             {
-                                existingObjects.Add(incomingObjs[i]);
-                                i++;
+                                // Collect all elements that match the run
+                                List<ElementId> modExisting = new List<ElementId>();
+                                foreach (ElementId eid in existing)
+                                {
+                                    Element e = uiApp.ActiveUIDocument.Document.GetElement(eid);
+                                    // Find the run ID
+                                    Entity entity = e.GetEntity(instanceSchema);
+                                    if (entity.IsValid())
+                                    {
+                                        Field f = instanceSchema.GetField("RunID");
+                                        int tempId = entity.Get<int>(f);
+                                        if (tempId == runId)
+                                        {
+                                            modExisting.Add(eid);
+                                        }
+                                    }
+                                }
+                                if (modExisting.Count == incomingObjs.Count)
+                                {
+                                    // just modify
+                                    ModifyObjects(incomingObjs, modExisting, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                }
+                                else if (modExisting.Count > incomingObjs.Count)
+                                {
+                                    // modify and delete
+                                    // Modify and Delete
+                                    List<RevitObject> existingObjects = new List<RevitObject>();
+                                    List<ElementId> removeObjects = new List<ElementId>();
+
+                                    int i = 0;
+                                    while (i < incomingObjs.Count)
+                                    {
+                                        existingObjects.Add(incomingObjs[i]);
+                                        i++;
+                                    }
+                                    while (existing != null && i < existing.Count)
+                                    {
+                                        removeObjects.Add(existing[i]);
+                                        i++;
+                                    }
+                                    try
+                                    {
+                                        ModifyObjects(existingObjects, modExisting, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                        DeleteExisting(uiApp.ActiveUIDocument.Document, removeObjects);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Debug.WriteLine(ex.Message);
+                                    }
+                                }
+                                else if (modExisting.Count < incomingObjs.Count)
+                                {
+                                    // modify and create
+                                    // create and modify
+                                    List<RevitObject> existingObjects = new List<RevitObject>();
+                                    List<RevitObject> newObjects = new List<RevitObject>();
+
+                                    int i = 0;
+                                    Debug.Assert(existing != null, "existing != null");
+                                    while (i < existing.Count)
+                                    {
+                                        existingObjects.Add(incomingObjs[i]);
+                                        i++;
+                                    }
+                                    while (i < incomingObjs.Count)
+                                    {
+                                        newObjects.Add(incomingObjs[i]);
+                                        i++;
+                                    }
+                                    try
+                                    {
+                                        ModifyObjects(existingObjects, modExisting, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                        CreateObjects(newObjects, uiApp.ActiveUIDocument.Document, uniqueId, runId);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Debug.WriteLine(ex.Message);
+                                    }
+                                }
                             }
-                            while (existing != null && i < existing.Count)
+                            // modBehavior = 1, Create a new run
+                            else if (modBehavior == 1)
                             {
-                                removeObjects.Add(existing[i]);
-                                i++;
+                                // Just send everything to create a new Run.
+                                try
+                                {
+                                    CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId, lastId + 1);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.WriteLine("Error", ex.Message);
+                                }
                             }
-                            try
+
+                            // modBehavior = 3, cancel/ignore
+                        }
+                        else
+                        {
+                            TaskDialog dlg = new TaskDialog("Warning") { MainInstruction = "Incoming Data" };
+                            RevitObject existingObj1 = incomingObjs[0];
+                            bool profileWarning1 = (existingObj1.CategoryId == -2000011 && existingObj1.Curves.Count > 1) || existingObj1.CategoryId == -2000032 || existingObj1.CategoryId == -2000035;
+                            if (existing == null || existing.Count == 0)
                             {
-                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document, uniqueId, profileWarning);
-                                DeleteExisting(uiApp.ActiveUIDocument.Document, removeObjects);
+                                dlg.MainContent = "Data is being sent to Revit from another application using Lyrebird." +
+                                    " This data will be used to create " + incomingObjs.Count.ToString(CultureInfo.InvariantCulture) + " elements.  How would you like to proceed?";
+                                dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Create new elements");
+                                dlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Cancel");
                             }
-                            catch (Exception ex)
+
+                            TaskDialogResult result1 = dlg.Show();
+                            if (result1 == TaskDialogResult.CommandLink1)
                             {
-                              Debug.WriteLine(ex.Message);
+                                // Create new
+                                try
+                                {
+                                    CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId, 0);
+                                }
+                                catch (Exception ex)
+                                {
+                                    TaskDialog.Show("Error", ex.Message);
+                                }
                             }
                         }
                     }
-                    else if (result == TaskDialogResult.CommandLink2)
+                    catch (Exception ex)
                     {
-                        // if 0, do nothing
-                        if (option == 1)
-                        {
-                            // Create new
-                            try
-                            {
-                                CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId);
-                            }
-                            catch (Exception ex)
-                            {
-                              Debug.WriteLine(ex.Message);
-                            }
-                        }
-                        else if (option == 2)
-                        {
-                            // Create new
-                            try
-                            {
-                                CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId);
-                            }
-                            catch (Exception ex)
-                            {
-                              Debug.WriteLine(ex.Message);
-                            }
-                        }
-                        else if (option == 3)
-                        {
-                            // Modify and ignore
-                            List<RevitObject> existingObjects = new List<RevitObject>();
-                            //List<ElementId> removeObjects = new List<ElementId>();
-
-                            int i = 0;
-                            while (i < incomingObjs.Count)
-                            {
-                                existingObjects.Add(incomingObjs[i]);
-                                i++;
-                            }
-                            try
-                            {
-                                ModifyObjects(existingObjects, existing, uiApp.ActiveUIDocument.Document, uniqueId, profileWarning);
-                            }
-                            catch (Exception ex)
-                            {
-                              Debug.WriteLine(ex.Message);
-                            }
-                        }
+                        TaskDialog.Show("Test", "test");
+                        Debug.WriteLine(ex.Message);
                     }
-                    else if (result == TaskDialogResult.CommandLink3)
+                    finally
                     {
-                        if (option == 3)
-                        {
-                            // Create new
-                            try
-                            {
-                                CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId);
-                            }
-                            catch (Exception ex)
-                            {
-                              Debug.WriteLine(ex.Message);
-                            }
-                        }
-                        
+                        Monitor.Pulse(_locker);
                     }
-                }
-                catch (Exception ex)
-                {
-                  Debug.WriteLine(ex.Message);
-                }
-                finally
-                {
-                    Monitor.Pulse(_locker);
-                }
-            });
-            Monitor.Wait(_locker, WAIT_TIMEOUT);
-            
+                });
+                Monitor.Wait(_locker, Properties.Settings.Default.serverTimeout);
+            }
             return true;
         }
 
@@ -817,12 +966,12 @@ namespace LMNA.Lyrebird
                 {
                     currentDocName = "NULL";
                 }
-                Monitor.Wait(_locker, WAIT_TIMEOUT);
+                Monitor.Wait(_locker, Properties.Settings.Default.infoTimeout);
             }
             return currentDocName;
         }
 
-        private void CreateObjects(List<RevitObject> revitObjects, Document doc, Guid uniqueId)
+        private void CreateObjects(List<RevitObject> revitObjects, Document doc, Guid uniqueId, int runId)
         {
             // Create new Revit objects.
             //List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
@@ -872,6 +1021,9 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                // Create a filed to store the run number
+                                FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
+                                runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
                                 sb.SetSchemaName("LMNtsInstanceGUID");
                                 instanceSchema = sb.Finish();
@@ -880,6 +1032,7 @@ namespace LMNA.Lyrebird
                             XYZ origin = XYZ.Zero;
                             if (hostBehavior == 0)
                             {
+                                int x = 0;
                                 foreach (RevitObject obj in revitObjects)
                                 {
                                     try
@@ -891,13 +1044,32 @@ namespace LMNA.Lyrebird
                                     {
                                         TaskDialog.Show("Error", ex.Message);
                                     }
+                                    
                                     // Rotate
                                     if (obj.Orientation != null)
                                     {
-                                        if (Math.Abs(obj.Orientation.Z - 0) < double.Epsilon)
+                                        if (Math.Round(Math.Abs(obj.Orientation.Z - 0), 10) < double.Epsilon)
                                         {
                                             Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
-                                            double angle = Math.Atan2(obj.Orientation.Y, obj.Orientation.X);
+                                            XYZ normalVector = new XYZ(0, -1, 0);
+                                            XYZ orient = new XYZ(obj.Orientation.X, obj.Orientation.Y, obj.Orientation.Z);
+                                            double angle = 0;
+                                            if (orient.X < 0 && orient.Y < 0)
+                                            {
+                                                angle = (2 * Math.PI) - normalVector.AngleTo(orient);
+                                            }
+                                            else if (orient.X < 0)
+                                            {
+                                                angle = (Math.PI - normalVector.AngleTo(orient)) + Math.PI;
+                                            }
+                                            else if (orient.Y == 0)
+                                            {
+                                                angle = 1.5 * Math.PI;
+                                            }
+                                            else
+                                            {
+                                                angle = normalVector.AngleTo(orient);
+                                            }
                                             ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
                                         }
                                     }
@@ -906,7 +1078,9 @@ namespace LMNA.Lyrebird
                                     SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
-                                    AssignGuid(fi, uniqueId, instanceSchema);
+                                    AssignGuid(fi, uniqueId, instanceSchema, runId);
+
+                                    x++;
                                 }
                             }
                             else
@@ -952,7 +1126,7 @@ namespace LMNA.Lyrebird
                                     SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
-                                    AssignGuid(fi, uniqueId, instanceSchema);
+                                    AssignGuid(fi, uniqueId, instanceSchema, runId);
                                 }
                                 // delete the host finder
                                 ElementId hostFinderFamily = hostFinder.Symbol.Family.Id;
@@ -981,7 +1155,6 @@ namespace LMNA.Lyrebird
             {
                 // Find the FamilySymbol
                 FamilySymbol symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
-
                 if (symbol != null)
                 {
                     using (Transaction t = new Transaction(doc, "Lyrebird Create Objects"))
@@ -1043,7 +1216,7 @@ namespace LMNA.Lyrebird
                                     SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
-                                    AssignGuid(fi, uniqueId, instanceSchema);
+                                    AssignGuid(fi, uniqueId, instanceSchema, runId);
                                 }
                                 
                             }
@@ -1216,7 +1389,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(w, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(w, uniqueId, instanceSchema);
+                                                AssignGuid(w, uniqueId, instanceSchema, 0);
                                             }
                                         }
                                         // See if it's a structural column
@@ -1252,7 +1425,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
                                             }
                                         }
 
@@ -1333,7 +1506,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
                                             }
                                         }
                                     }
@@ -1442,7 +1615,7 @@ namespace LMNA.Lyrebird
                                             SetParameters(w, obj.Parameters, doc);
 
                                             // Assign the GH InstanceGuid
-                                            AssignGuid(w, uniqueId, instanceSchema);
+                                            AssignGuid(w, uniqueId, instanceSchema, 0);
 
                                         }
                                         else if (obj.CategoryId == -2000032)
@@ -1512,7 +1685,7 @@ namespace LMNA.Lyrebird
                                             SetParameters(flr, obj.Parameters, doc);
 
                                             // Assign the GH InstanceGuid
-                                            AssignGuid(flr, uniqueId, instanceSchema);
+                                            AssignGuid(flr, uniqueId, instanceSchema, 0);
                                             
                                         }
                                         else if (obj.CategoryId == -2000035)
@@ -1551,7 +1724,7 @@ namespace LMNA.Lyrebird
                                             SetParameters(roof, obj.Parameters, doc);
                                             
                                             // Assign the GH InstanceGuid
-                                            AssignGuid(roof, uniqueId, instanceSchema);
+                                            AssignGuid(roof, uniqueId, instanceSchema, 0);
                                         }
                                     }
                                     #endregion
@@ -1583,6 +1756,8 @@ namespace LMNA.Lyrebird
 
             // Determine what kind of object we're creating.
             RevitObject ro = existingObjects[0];
+
+            
 
             #region Normal Origin based FamilyInstance
             // Modify origin based family instances
@@ -1624,6 +1799,9 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                // Create a filed to store the run number
+                                FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
+                                runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
                                 sb.SetSchemaName("LMNtsInstanceGUID");
                                 instanceSchema = sb.Finish();
@@ -1674,18 +1852,53 @@ namespace LMNA.Lyrebird
                                     // Rotate
                                     if (obj.Orientation != null)
                                     {
-                                        if (Math.Abs(obj.Orientation.Z - 0) < double.Epsilon)
+                                        if (Math.Round(Math.Abs(obj.Orientation.Z - 0), 10) < double.Epsilon)
                                         {
-                                            Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
-                                            if (fi != null)
+                                            XYZ orientation = fi.FacingOrientation;
+                                            orientation = orientation.Multiply(-1);
+                                            XYZ incomingOrientation = new XYZ(obj.Orientation.X, obj.Orientation.Y, obj.Orientation.Z);
+                                            XYZ normalVector = new XYZ(0, -1, 0);
+                                            
+                                            double currentAngle = 0;
+                                            if (orientation.X < 0 && orientation.Y < 0)
                                             {
-                                                LocationPoint lp = fi.Location as LocationPoint;
-                                                if (lp != null)
-                                                {
-                                                    double angle = Math.Atan2(obj.Orientation.Y, obj.Orientation.X) - lp.Rotation;
-                                                    ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
-                                                }
+                                                currentAngle = (2 * Math.PI) - normalVector.AngleTo(orientation);
                                             }
+                                            else if (orientation.Y == 0 && orientation.X < 0)
+                                            {
+                                                currentAngle = 1.5 * Math.PI;
+                                            }
+                                            else if (orientation.X < 0)
+                                            {
+                                                currentAngle = (Math.PI - normalVector.AngleTo(orientation)) + Math.PI;
+                                            }
+                                            else
+                                            {
+                                                currentAngle = normalVector.AngleTo(orientation);
+                                            }
+
+                                            double incomingAngle = 0;
+                                            if (incomingOrientation.X < 0 && incomingOrientation.Y < 0)
+                                            {
+                                                incomingAngle = (2 * Math.PI) - normalVector.AngleTo(incomingOrientation);
+                                            }
+                                            else if (incomingOrientation.Y == 0 && incomingOrientation.X < 0)
+                                            {
+                                                incomingAngle = 1.5 * Math.PI;
+                                            }
+                                            else if (incomingOrientation.X < 0)
+                                            {
+                                                incomingAngle = (Math.PI - normalVector.AngleTo(incomingOrientation)) + Math.PI;
+                                            }
+                                            else
+                                            {
+                                                incomingAngle = normalVector.AngleTo(incomingOrientation);
+                                            }
+                                            double angle = incomingAngle - currentAngle;
+                                            //TaskDialog.Show("Test", "CurrentAngle: " + currentAngle.ToString() + "\nIncoming Angle: " + incomingAngle.ToString() + "\nResulting Rotation: " + angle.ToString() +
+                                            //    "\nFacingOrientation: " + orientation.ToString() + "\nIncoming Orientation: " + incomingOrientation.ToString());
+                                            Line axis = Line.CreateBound(origin, origin + XYZ.BasisZ);
+                                            ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
                                         }
                                     }
 
@@ -1794,7 +2007,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
                                             }
                                         }
                                     }
@@ -1848,7 +2061,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
                                             }
 
                                             else
@@ -2093,7 +2306,7 @@ namespace LMNA.Lyrebird
                             FamilyInstance fi = null;
                             try
                             {
-                                bool supress = false;
+                                bool supress = Properties.Settings.Default.suppressWarning;
                                 bool supressedReplace = false;
                                 bool supressedModify = true;
                                 for (int i = 0; i < existingObjects.Count; i++)
@@ -2312,7 +2525,7 @@ namespace LMNA.Lyrebird
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Replace the existing elements, understanding hosted elements may be lost");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Only updated parameter information and not profile or location information");
                                             warningDlg.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Cancel");
-                                            warningDlg.VerificationText = "Supress similar warnings";
+                                            //warningDlg.VerificationText = "Supress similar warnings";
 
                                             TaskDialogResult result = warningDlg.Show();
                                             if (result == TaskDialogResult.CommandLink1)
@@ -2320,19 +2533,19 @@ namespace LMNA.Lyrebird
                                                 replace = true;
                                                 supressedReplace = true;
                                                 supressedModify = true;
-                                                supress = warningDlg.WasVerificationChecked();
+                                                //supress = warningDlg.WasVerificationChecked();
                                             }
                                             if (result == TaskDialogResult.CommandLink2)
                                             {
                                                 supressedReplace = false;
                                                 supressedModify = true;
-                                                supress = warningDlg.WasVerificationChecked();
+                                                //supress = warningDlg.WasVerificationChecked();
                                             }
                                             if (result == TaskDialogResult.CommandLink3)
                                             {
                                                 supressedReplace = false;
                                                 supressedModify = false;
-                                                supress = warningDlg.WasVerificationChecked();
+                                                //supress = warningDlg.WasVerificationChecked();
                                             }
                                         }
                                         // A list of curves.  These should equate a closed planar curve from GH.
@@ -2497,7 +2710,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(w, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(w, uniqueId, instanceSchema);
+                                                AssignGuid(w, uniqueId, instanceSchema, runId);
                                             }
                                             else if (supressedModify) // Just update the parameters and don't change the wall
                                             {
@@ -2625,7 +2838,7 @@ namespace LMNA.Lyrebird
                                                     SetParameters(flr, obj.Parameters, doc);
 
                                                     // Assign the GH InstanceGuid
-                                                    AssignGuid(flr, uniqueId, instanceSchema);
+                                                    AssignGuid(flr, uniqueId, instanceSchema, runId);
                                                 }
                                                 else // The curves coming in should match the floor sketch.  Let's modify the floor's locationcurves to edit it's location/shape
                                                 {
@@ -2704,7 +2917,7 @@ namespace LMNA.Lyrebird
                                                         // Set the incoming parameters
                                                         SetParameters(flr, obj.Parameters, doc);
                                                         // Assign the GH InstanceGuid
-                                                        AssignGuid(flr, uniqueId, instanceSchema);
+                                                        AssignGuid(flr, uniqueId, instanceSchema, runId);
                                                     }
                                                 }
                                             }
@@ -2822,7 +3035,7 @@ namespace LMNA.Lyrebird
                                                     SetParameters(roof, obj.Parameters, doc);
 
                                                     // Assign the GH InstanceGuid
-                                                    AssignGuid(roof, uniqueId, instanceSchema);
+                                                    AssignGuid(roof, uniqueId, instanceSchema, runId);
                                                 }
                                                 else // The curves qty lines up, lets try to modify the roof sketch so we don't have to replace it.
                                                 {
@@ -2875,7 +3088,7 @@ namespace LMNA.Lyrebird
                                                         SetParameters(roof, obj.Parameters, doc);
 
                                                         // Assign the GH InstanceGuid
-                                                        AssignGuid(roof, uniqueId, instanceSchema);
+                                                        AssignGuid(roof, uniqueId, instanceSchema, runId);
 
                                                         doc.Delete(origRoof.Id);
                                                     }
@@ -2954,7 +3167,7 @@ namespace LMNA.Lyrebird
                                                             SetParameters(roof, obj.Parameters, doc);
 
                                                             // Assign the GH InstanceGuid
-                                                            AssignGuid(roof, uniqueId, instanceSchema);
+                                                            AssignGuid(roof, uniqueId, instanceSchema, runId);
 
                                                             doc.Delete(origRoof.Id);
                                                         }
@@ -3850,13 +4063,15 @@ namespace LMNA.Lyrebird
         #endregion
 
         #region Assign the GUID
-        private void AssignGuid(FamilyInstance fi, Guid guid, Schema instanceSchema)
+        private void AssignGuid(FamilyInstance fi, Guid guid, Schema instanceSchema, int run)
         {
             try
             {
                 Entity entity = new Entity(instanceSchema);
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
+                field = instanceSchema.GetField("RunID");
+                entity.Set<int>(field, run);
                 fi.SetEntity(entity);
             }
             catch (Exception ex)
@@ -3865,13 +4080,15 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void AssignGuid(Wall wall, Guid guid, Schema instanceSchema)
+        private void AssignGuid(Wall wall, Guid guid, Schema instanceSchema, int run)
         {
             try
             {
                 Entity entity = new Entity(instanceSchema);
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
+                field = instanceSchema.GetField("RunID");
+                entity.Set<int>(field, run);
                 wall.SetEntity(entity);
             }
             catch (Exception ex)
@@ -3880,13 +4097,15 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void AssignGuid(Floor floor, Guid guid, Schema instanceSchema)
+        private void AssignGuid(Floor floor, Guid guid, Schema instanceSchema, int run)
         {
             try
             {
                 Entity entity = new Entity(instanceSchema);
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
+                field = instanceSchema.GetField("RunID");
+                entity.Set<int>(field, run);
                 floor.SetEntity(entity);
             }
             catch (Exception ex)
@@ -3895,13 +4114,15 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void AssignGuid(FootPrintRoof roof, Guid guid, Schema instanceSchema)
+        private void AssignGuid(FootPrintRoof roof, Guid guid, Schema instanceSchema, int run)
         {
             try
             {
                 Entity entity = new Entity(instanceSchema);
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
+                field = instanceSchema.GetField("RunID");
+                entity.Set<int>(field, run);
                 roof.SetEntity(entity);
             }
             catch (Exception ex)

@@ -8,6 +8,7 @@ using Autodesk.Revit.UI.Events;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.DB;
 using LMNA.Lyrebird.LyrebirdCommon;
+using Autodesk.Revit.ApplicationServices;
 
 namespace LMNA.Lyrebird
 {
@@ -19,6 +20,8 @@ namespace LMNA.Lyrebird
         readonly string addr = @"net.pipe://localhost/LMNts/LyrebirdServer/Revit";
         Uri address;
         bool disableButton;
+
+        SettingsForm settingsForm = null;
 
         internal static UIApplication uiApp = null;
         UIControlledApplication uicApp;
@@ -65,7 +68,7 @@ namespace LMNA.Lyrebird
             
             
             _app = this;
-            serverActive = Properties.Settings.Default.serverActive;
+            serverActive = Properties.Settings.Default.defaultServerOn;
 
             // Create the button
             try
@@ -81,6 +84,8 @@ namespace LMNA.Lyrebird
                         LargeImage = bms,
                         ToolTip = "The Lyrebird Server is currently disabled in this session of Revit.  This is most likely because you have more than one session of Revit and the server can only run in one.",
                     };
+                    Properties.Settings.Default.enableServer = false;
+                    Properties.Settings.Default.Save();
                 }
                 else
                 {
@@ -104,7 +109,16 @@ namespace LMNA.Lyrebird
                             ToolTip = "The Lyrebird Server is currently off and will not accept requests for data or create objects.  Push button to toggle the server on.",
                         };
                     }
+                    Properties.Settings.Default.enableServer = true;
+                    Properties.Settings.Default.Save();
                 }
+
+                // Settings button
+                PushButtonData settingsButtonData = new PushButtonData("Lyrebird Settings", "Lyrebird Settings", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.SettingsCmd")
+                {
+                    LargeImage = bms,
+                    ToolTip = "Lyrebird Server settings.",
+                };
 
                 // Create the tab if necessary
                 const string tabName = "LMN"; 
@@ -134,15 +148,25 @@ namespace LMNA.Lyrebird
                     }
                 }
 
+                SplitButtonData sbd = new SplitButtonData("Lyrebird", "Lyrebird");
+                
                 if (!found)
                 {
                     // Create the panel
                     RibbonPanel utilitiesPanel = application.CreateRibbonPanel(tabName, "Utilities");
-                    serverButton = utilitiesPanel.AddItem(lyrebirdButton);
+
+                    // Split button
+                    SplitButton sb = utilitiesPanel.AddItem(sbd) as SplitButton;
+                    serverButton = sb.AddPushButton(lyrebirdButton) as PushButton;
+                    PushButton settingsButton = sb.AddPushButton(settingsButtonData) as PushButton;
+                    sb.IsSynchronizedWithCurrentItem = false;
                 }
                 else
                 {
-                    serverButton = panel.AddItem(lyrebirdButton);
+                    SplitButton sb = panel.AddItem(sbd) as SplitButton;
+                    serverButton = sb.AddPushButton(lyrebirdButton) as PushButton;
+                    PushButton settingsButton = sb.AddPushButton(settingsButtonData) as PushButton;
+                    sb.IsSynchronizedWithCurrentItem = false;
                 }
 
                 if (disableButton)
@@ -185,33 +209,47 @@ namespace LMNA.Lyrebird
             }
         }
 
+        public void ShowForm()
+        {
+            if (settingsForm == null || !settingsForm.IsVisible)
+            {
+                settingsForm = new SettingsForm(this);
+                settingsForm.Show();
+            }
+        }
+
         private void StartServer()
         {
-            try
+            if (serviceHost == null || serviceHost.State != CommunicationState.Opened)
             {
-                serviceHost = new ServiceHost(typeof(LyrebirdService), address);
-                serviceHost.AddServiceEndpoint(typeof(ILyrebirdService), new NetNamedPipeBinding(), "LyrebirdService");
-                serviceHost.Open();
-                if (serverActive)
+                try
                 {
-                    ServiceOn();
+                    serviceHost = new ServiceHost(typeof(LyrebirdService), address);
+                    NetNamedPipeBinding nnpb = new NetNamedPipeBinding();
+                    nnpb.MaxReceivedMessageSize = int.MaxValue;
+                    serviceHost.AddServiceEndpoint(typeof(ILyrebirdService), nnpb, "LyrebirdService");
+                    serviceHost.Open();
+                    if (serverActive)
+                    {
+                        ServiceOn();
+                    }
                 }
-            }
-            catch (AddressAlreadyInUseException ex)
-            {
-                Debug.WriteLine(ex.Message);
-                ServiceOff();
-                disableButton = true;
-            }
-            catch (AddressAccessDeniedException ex)
-            {
-                // Couldn"t Open the Server
-                Debug.WriteLine(ex.Message);  
-                ServiceOff();
-            }
-            catch (Exception ex)
-            {
-                TaskDialog.Show("Error", ex.ToString());
+                catch (AddressAlreadyInUseException ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    ServiceOff();
+                    disableButton = true;
+                }
+                catch (AddressAccessDeniedException ex)
+                {
+                    // Couldn"t Open the Server
+                    Debug.WriteLine(ex.Message);
+                    ServiceOff();
+                }
+                catch (Exception ex)
+                {
+                    TaskDialog.Show("Error", ex.ToString());
+                }
             }
         }
 
@@ -235,7 +273,7 @@ namespace LMNA.Lyrebird
 
         private void ServiceOn()
         {
-            // Remove queued tasks
+            // Remove any tasks queued while the server was off
             while (TaskContainer.Instance.HasTaskToPerform)
             {
                 TaskContainer.Instance.DequeueTask();
@@ -282,8 +320,59 @@ namespace LMNA.Lyrebird
                 StartServer();
                 //ServiceOn();
             }
-            Properties.Settings.Default.serverActive = serverActive;
-            Properties.Settings.Default.Save();
+            //Properties.Settings.Default.serverActive = serverActive;
+            //Properties.Settings.Default.Save();
+        }
+
+        public void Disable()
+        {
+            RibbonButton rbutton = serverButton as RibbonButton;
+            if (rbutton.Enabled)
+            {
+                BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                rbutton.LargeImage = bms;
+                rbutton.ItemText = "Lyrebird Server\nDisabled";
+                rbutton.ToolTip = "The Lyrebird Server is currently disabled in this session of Revit.  This is most likely because you have more than one session of Revit and the server can only run in one.";
+                rbutton.Enabled = false;
+                serverButton = rbutton;
+                StopServer();
+            }
+        }
+
+        public void Enable()
+        {
+            RibbonButton rbutton = serverButton as RibbonButton;
+            if (!rbutton.Enabled)
+            {
+                if (serverActive)
+                {
+                    BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    if (rbutton != null)
+                    {
+                        rbutton.LargeImage = bms;
+                        rbutton.ItemText = "Lyrebird\nServer On";
+                        rbutton.ToolTip = "The Lyrebird Server currently on and will accept requests for data and can create objects.  Push button to toggle the server off.";
+                        rbutton.Enabled = true;
+                        serverButton = rbutton;
+                    }
+                    StartServer();
+                }
+                else
+                {
+                    BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    if (rbutton != null)
+                    {
+                        rbutton.LargeImage = bms;
+                        rbutton.ItemText = "Lyrebird\nServer Off";
+                        rbutton.ToolTip = "The Lyrebird Server is currently off and will not accept requests for data or create objects.  Push button to toggle the server on.";
+                        rbutton.Enabled = true;
+                        serverButton = rbutton;
+                    }
+                    StopServer();
+                }
+            }
+            Toggle();
+            Toggle();
         }
     }
 }

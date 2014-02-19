@@ -252,7 +252,7 @@ namespace LMNA.Lyrebird.GH
                         else if (curves != null && curves.Branches.Count > 0)
                         {
                             // Get curves for curve based components
-                            
+
                             // Determine if we're profile or line based
                             if (curves.Branches.Count == curves.DataCount)
                             {
@@ -314,7 +314,7 @@ namespace LMNA.Lyrebird.GH
                                         {
                                             //List<LyrebirdPoint> points = new List<LyrebirdPoint>();
                                             LyrebirdCurve lbc = GetLBCurve(ghc);
-                                            List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve> {lbc};
+                                            List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve> { lbc };
 
                                             RevitObject ro = new RevitObject
                                             {
@@ -328,7 +328,7 @@ namespace LMNA.Lyrebird.GH
                                                 GHScaleFactor = scale.ScaleFactor,
                                                 GHScaleName = scale.ScaleName
                                             };
-                                            
+
                                             tempObjs.Add(ro);
                                         }
                                     }
@@ -493,7 +493,7 @@ namespace LMNA.Lyrebird.GH
                                 List<RevitParameter> revitParams = new List<RevitParameter>();
                                 for (int i = 6; i < Params.Input.Count; i++)
                                 {
-                                    
+
                                     RevitParameter rp = new RevitParameter();
                                     IGH_Param param = Params.Input[i];
                                     string paramInfo = param.Description;
@@ -501,14 +501,14 @@ namespace LMNA.Lyrebird.GH
                                     string paramName = null;
                                     try
                                     {
-                                      paramName = pi[1].Substring(1);
-                                      string paramStorageType = pi[5].Substring(1);
-                                      rp.ParameterName = paramName;
-                                      rp.StorageType = paramStorageType;
+                                        paramName = pi[1].Substring(1);
+                                        string paramStorageType = pi[5].Substring(1);
+                                        rp.ParameterName = paramName;
+                                        rp.StorageType = paramStorageType;
                                     }
                                     catch (Exception ex)
                                     {
-                                      Debug.WriteLine(ex.Message);
+                                        Debug.WriteLine(ex.Message);
                                     }
                                     if (paramName != null)
                                     {
@@ -519,7 +519,7 @@ namespace LMNA.Lyrebird.GH
                                         }
                                         catch (Exception ex)
                                         {
-                                          Debug.WriteLine(ex.Message);
+                                            Debug.WriteLine(ex.Message);
                                         }
                                         if (data != null)
                                         {
@@ -528,7 +528,7 @@ namespace LMNA.Lyrebird.GH
                                             revitParams.Add(rp);
                                         }
                                     }
-                                    
+
                                 }
                                 ro.Parameters = revitParams;
                                 tempObjs.Add(ro);
@@ -549,7 +549,7 @@ namespace LMNA.Lyrebird.GH
                                 else
                                 {
                                     channel.CreateOrModify(obj, InstanceGuid);
-                                    message = "Data sent to the lyrebird server.";
+                                    message = obj.Count.ToString() + " objects sent to the lyrebird server.";
                                 }
                             }
                             catch
@@ -563,7 +563,7 @@ namespace LMNA.Lyrebird.GH
                         }
                         catch (Exception ex)
                         {
-                          Debug.WriteLine(ex.Message);
+                            Debug.WriteLine(ex.Message);
                         }
                     }
                     else
@@ -571,6 +571,10 @@ namespace LMNA.Lyrebird.GH
                         message = "Error\n" + "The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.";
                     }
                 }
+            }
+            else
+            {
+                message = null;
             }
 
             // Check if the revit information is set
@@ -703,53 +707,50 @@ namespace LMNA.Lyrebird.GH
         // It has since been changed to run whenever parameters are added/removed
         private void SyncInputs()
         {
-            if (inputParameters.Count > 0)
+            // Find out how many parameters there are and if inputs should be added or removed.
+            if (inputParameters.Count == Params.Input.Count - 6)
             {
-                // Find out how many parameters there are and if inputs should be added or removed.
-                if (inputParameters.Count == Params.Input.Count - 6)
-                {
-                    // Parameters quantities match up with inputs, do nothing
-                    RefreshParameters();
-                    return;
-                }
-                
-                RecordUndoEvent("Sync Inputs");
-
-                //  Check if we need to add inputs
-                if (inputParameters.Count > Params.Input.Count - 6)
-                {
-                    for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 6; i++)
-                    {
-                        Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject
-                        {
-                            Name = "Parameter" + (i - 6).ToString(CultureInfo.InvariantCulture),
-                            NickName = "P" + (i - 6).ToString(CultureInfo.InvariantCulture),
-                            Description =
-                              "Parameter Name: " + inputParameters[i - 7].ParameterName + "\nIs Type: " +
-                              inputParameters[i - 7].IsType.ToString() + "\nStorageType: " +
-                              inputParameters[i - 7].StorageType,
-                            Optional = true,
-                            Access = GH_ParamAccess.tree
-                        };
-                        
-                        Params.RegisterInputParam(param);
-                    }
-                }
-
-                // Remove unnecessay inputs
-                else if (inputParameters.Count < Params.Input.Count - 6)
-                {
-                    //System.Windows.Forms.MessageBox.Show("Going to try and remove parameters.");
-                    while (Params.Input.Count > inputParameters.Count + 6)
-                    {
-                        IGH_Param param = Params.Input[Params.Input.Count - 1];
-                        Params.UnregisterInputParameter(param);
-                    }
-                }
+                // Parameters quantities match up with inputs, do nothing
                 RefreshParameters();
-                Params.OnParametersChanged();
-                ExpireSolution(true);
+                return;
             }
+                
+            RecordUndoEvent("Sync Inputs");
+
+            //  Check if we need to add inputs
+            if (inputParameters.Count > Params.Input.Count - 6)
+            {
+                for (int i = Params.Input.Count + 1; i <= inputParameters.Count + 6; i++)
+                {
+                    Grasshopper.Kernel.Parameters.Param_GenericObject param = new Grasshopper.Kernel.Parameters.Param_GenericObject
+                    {
+                        Name = "Parameter" + (i - 6).ToString(CultureInfo.InvariantCulture),
+                        NickName = "P" + (i - 6).ToString(CultureInfo.InvariantCulture),
+                        Description =
+                            "Parameter Name: " + inputParameters[i - 7].ParameterName + "\nIs Type: " +
+                            inputParameters[i - 7].IsType.ToString() + "\nStorageType: " +
+                            inputParameters[i - 7].StorageType,
+                        Optional = true,
+                        Access = GH_ParamAccess.tree
+                    };
+                        
+                    Params.RegisterInputParam(param);
+                }
+            }
+
+            // Remove unnecessay inputs
+            else if (inputParameters.Count < Params.Input.Count - 6)
+            {
+                while (Params.Input.Count > inputParameters.Count + 6)
+                {
+                    IGH_Param param = Params.Input[Params.Input.Count - 1];
+                    Params.UnregisterInputParameter(param);
+                }
+            }
+                
+            RefreshParameters();
+            Params.OnParametersChanged();
+            ExpireSolution(true);
         }
 
         private void RefreshParameters()

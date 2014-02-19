@@ -34,5 +34,65 @@ namespace LMNA.Lyrebird.Properties {
                 this["serverActive"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool enableServer {
+            get {
+                return ((bool)(this["enableServer"]));
+            }
+            set {
+                this["enableServer"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool suppressWarning {
+            get {
+                return ((bool)(this["suppressWarning"]));
+            }
+            set {
+                this["suppressWarning"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool defaultServerOn {
+            get {
+                return ((bool)(this["defaultServerOn"]));
+            }
+            set {
+                this["defaultServerOn"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("200")]
+        public int serverTimeout {
+            get {
+                return ((int)(this["serverTimeout"]));
+            }
+            set {
+                this["serverTimeout"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("200")]
+        public int infoTimeout {
+            get {
+                return ((int)(this["infoTimeout"]));
+            }
+            set {
+                this["infoTimeout"] = value;
+            }
+        }
     }
 }

@@ -224,4 +224,20 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         }
 
     }
+
+    [DataContract]
+    public class Runs
+    {
+        [DataMember]
+        public int RunId { get; set; }
+
+        [DataMember]
+        public string RunName { get; set; }
+
+        public Runs(int id, string name)
+        {
+            RunId = id;
+            RunName = name;
+        }
+    }
 }
