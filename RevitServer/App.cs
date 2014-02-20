@@ -114,10 +114,27 @@ namespace LMNA.Lyrebird
                 }
 
                 // Settings button
+                BitmapSource setBMS = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_Settings.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
                 PushButtonData settingsButtonData = new PushButtonData("Lyrebird Settings", "Lyrebird Settings", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.SettingsCmd")
                 {
-                    LargeImage = bms,
+                    LargeImage = setBMS,
                     ToolTip = "Lyrebird Server settings.",
+                };
+
+                // Selection button
+                BitmapSource selBMS = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_Select.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                PushButtonData selectionButtonData = new PushButtonData("Select Run", "Select Run", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.SelectRunElementsCmd")
+                {
+                    LargeImage = selBMS,
+                    ToolTip = "Select elements created from Lyrebird",
+                };
+
+                // Selection button
+                BitmapSource delBMS = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_RemoveData.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                PushButtonData removeButtonData = new PushButtonData("Remove Data", "Remove Data", typeof(RevitServerApp).Assembly.Location, "LMNA.Lyrebird.RemoveDataCmd")
+                {
+                    LargeImage = delBMS,
+                    ToolTip = "Remove Lyrebird data from selected elements",
                 };
 
                 // Create the tab if necessary
@@ -159,6 +176,8 @@ namespace LMNA.Lyrebird
                     SplitButton sb = utilitiesPanel.AddItem(sbd) as SplitButton;
                     serverButton = sb.AddPushButton(lyrebirdButton) as PushButton;
                     PushButton settingsButton = sb.AddPushButton(settingsButtonData) as PushButton;
+                    PushButton selButton = sb.AddPushButton(selectionButtonData) as PushButton;
+                    PushButton removeButton = sb.AddPushButton(removeButtonData) as PushButton;
                     sb.IsSynchronizedWithCurrentItem = false;
                 }
                 else
@@ -166,6 +185,8 @@ namespace LMNA.Lyrebird
                     SplitButton sb = panel.AddItem(sbd) as SplitButton;
                     serverButton = sb.AddPushButton(lyrebirdButton) as PushButton;
                     PushButton settingsButton = sb.AddPushButton(settingsButtonData) as PushButton;
+                    PushButton selButton = sb.AddPushButton(selectionButtonData) as PushButton;
+                    PushButton removeButton = sb.AddPushButton(removeButtonData) as PushButton;
                     sb.IsSynchronizedWithCurrentItem = false;
                 }
 

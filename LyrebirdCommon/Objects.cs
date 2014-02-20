@@ -234,10 +234,35 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         [DataMember]
         public string RunName { get; set; }
 
-        public Runs(int id, string name)
+        [DataMember]
+        public string FamilyType { get; set; }
+
+        [DataMember]
+        public List<int> ElementIds { get; set; }
+
+        public Runs(int id, string name, string familyType)
         {
             RunId = id;
             RunName = name;
+            FamilyType = familyType;
+        }
+
+        public Runs()
+        {
+        }
+    }
+
+    [DataContract]
+    public class RunCollection
+    {
+        [DataMember]
+        public System.Guid ComponentGuid { get; set; }
+
+        [DataMember]
+        public List<Runs> Runs { get; set; }
+
+        public RunCollection()
+        {
         }
     }
 }

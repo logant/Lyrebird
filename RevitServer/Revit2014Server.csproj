@@ -76,6 +76,11 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="RemoveDataCmd.cs" />
+    <Compile Include="SelectRunElementsCmd.cs" />
+    <Compile Include="SelectRunsForm.xaml.cs">
+      <DependentUpon>SelectRunsForm.xaml</DependentUpon>
+    </Compile>
     <Compile Include="SettingsCmd.cs" />
     <Compile Include="SettingsForm.xaml.cs">
       <DependentUpon>SettingsForm.xaml</DependentUpon>
@@ -91,12 +96,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <EmbeddedResource Include="images\IntersectionPoint.rfa" />
     <EmbeddedResource Include="images\Lyrebird_Off.png" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="Resources\IntersectionPoint.rfa" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="images\Lyrebird_On.png" />
@@ -109,12 +114,19 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="images\LMNts_transparency_80x17.png" />
+    <EmbeddedResource Include="images\Lyrebird_Select.png" />
+    <EmbeddedResource Include="images\Lyrebird_RemoveData.png" />
+    <EmbeddedResource Include="images\Lyrebird_Settings.png" />
     <Content Include="LMNA.Lyrebird.RevitServer.addin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Include="ModifyForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SelectRunsForm.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

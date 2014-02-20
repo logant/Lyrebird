@@ -102,7 +102,7 @@ namespace LMNA.Lyrebird
                         families.Add(roofObj);
                     }
 
-                    families.Sort((x, y) => String.CompareOrdinal(x.FamilyName, y.FamilyName));
+                    families.Sort((x, y) => String.CompareOrdinal(x.FamilyName.ToUpper(), y.FamilyName.ToUpper()));
                     familyNames = families;
                 }
                 catch (Exception exception)
@@ -179,6 +179,7 @@ namespace LMNA.Lyrebird
                             }
                         }
                     }
+                    types.Sort((x, y) => String.CompareOrdinal(x.ToUpper(), y.ToUpper()));
                     typeNames = types;
                 }
                 catch (Exception exception)
@@ -795,7 +796,28 @@ namespace LMNA.Lyrebird
                                     if (!runIds.Contains(tempId))
                                     {
                                         runIds.Add(tempId);
-                                        Runs run = new Runs(tempId, "Run" + tempId.ToString());
+                                        string familyName = string.Empty;
+                                        if (e.Category.Id.IntegerValue == -2000011)
+                                        {
+                                            Wall w = e as Wall;
+                                            familyName = w.Category.Name + " : " + w.WallType.Name;
+                                        }
+                                        else if (e.Category.Id.IntegerValue == -2000032)
+                                        {
+                                            Floor flr = e as Floor;
+                                            familyName = flr.Category.Name + " : " + flr.FloorType.Name;
+                                        }
+                                        else if (e.Category.Id.IntegerValue == -2000035)
+                                        {
+                                            RoofBase r = e as RoofBase;
+                                            familyName = r.Category.Name + " : " + r.RoofType.Name;
+                                        }
+                                        else
+                                        {
+                                            FamilyInstance famInst = e as FamilyInstance;
+                                            familyName = famInst.Symbol.Family.Name + " : " + famInst.Symbol.Name;
+                                        }
+                                        Runs run = new Runs(tempId, "Run" + tempId.ToString(), familyName);
                                         allRuns.Add(run);
                                     }
                                 }
@@ -1182,11 +1204,14 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                // Create a filed to store the run number
+                                FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
+                                runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
                                 sb.SetSchemaName("LMNtsInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
-                          try
+                            try
                             {
                                 foreach (RevitObject obj in revitObjects)
                                 {
@@ -1324,6 +1349,9 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                // Create a filed to store the run number
+                                FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
+                                runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
                                 sb.SetSchemaName("LMNtsInstanceGUID");
                                 instanceSchema = sb.Finish();
@@ -3471,7 +3499,7 @@ namespace LMNA.Lyrebird
             {
                 subTrans.Start();
 
-              if(hostFinder == null)
+                if(hostFinder == null)
                 {
                     // check if the point family exists
                     string path = typeof(LyrebirdService).Assembly.Location.Replace("LMNA.Lyrebird.RevitServer.dll", "IntersectionPoint.rfa");
@@ -3482,11 +3510,25 @@ namespace LMNA.Lyrebird
                         System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
                         WriteResource(assembly, "IntersectionPoint.rfa", path);
                     }
-                
+
                     // Load the family and place an instance of it.
                     Family insertPoint = null;
-                    doc.LoadFamily(path, out insertPoint);
-                    System.IO.File.Delete(path);
+                    
+                    try
+                    {
+                        if (System.IO.File.Exists(path))
+                        {
+                            doc.LoadFamily(path, out insertPoint);
+                        }
+                        else
+                        {
+                            TaskDialog.Show("err", "Could not find family to load");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Error", ex.Message); ;
+                    }
                     FamilySymbol ips = null;
                     foreach(FamilySymbol fs in insertPoint.Symbols)
                     {
@@ -3495,6 +3537,7 @@ namespace LMNA.Lyrebird
                     
                     // Create an instance
                     hostFinder = AdaptiveComponentInstanceUtils.CreateAdaptiveComponentInstance(doc, ips);
+                    System.IO.File.Delete(path);
                 }
 
                 IList<ElementId> placePointIds = new List<ElementId>();

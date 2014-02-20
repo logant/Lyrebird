@@ -37,7 +37,6 @@ namespace LMNA.Lyrebird
             runComboBox.ItemsSource = runs;
             runComboBox.DisplayMemberPath = "RunName";
             runComboBox.SelectedIndex = 0;
-
         }
 
         private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -117,6 +116,7 @@ namespace LMNA.Lyrebird
         {
             Runs r = e.AddedItems[0] as Runs;
             selectedRun = r.RunId;
+            exampleLabel.Content = r.FamilyType;
         }
 
         private LinearGradientBrush EnterBrush()
@@ -127,10 +127,10 @@ namespace LMNA.Lyrebird
                 EndPoint = new System.Windows.Point(0, 1)
             };
 
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(0, 180, 180, 180), 0.0));
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 0.1));
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 0.9));
-            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(0, 180, 180, 180), 1.0));
+            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 0.0));
+            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 250, 250, 250), 0.15));
+            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 250, 250, 250), 0.85));
+            brush.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(255, 232, 232, 232), 1.0));
             return brush;
         }
     }
