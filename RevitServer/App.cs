@@ -22,6 +22,7 @@ namespace LMNA.Lyrebird
         bool disableButton;
 
         SettingsForm settingsForm = null;
+        SelectRunsForm selectionForm = null;
 
         internal static UIApplication uiApp = null;
         UIControlledApplication uicApp;
@@ -230,12 +231,21 @@ namespace LMNA.Lyrebird
             }
         }
 
-        public void ShowForm()
+        public void ShowSettingsForm()
         {
             if (settingsForm == null || !settingsForm.IsVisible)
             {
                 settingsForm = new SettingsForm(this);
                 settingsForm.Show();
+            }
+        }
+
+        public void ShowSelectionForm(List<RunCollection> rcs, UIDocument uidoc)
+        {
+            if (selectionForm == null || !selectionForm.IsVisible)
+            {
+                selectionForm = new SelectRunsForm(rcs, uidoc);
+                selectionForm.Show();
             }
         }
 

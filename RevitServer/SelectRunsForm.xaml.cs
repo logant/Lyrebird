@@ -39,18 +39,20 @@ namespace LMNA.Lyrebird
             InitializeComponent();
 
             // Setup the data.
-            // Find the runs
-            guidComboBox.ItemsSource = runCollections;
-            guidComboBox.DisplayMemberPath = "ComponentGuid";
-            guidComboBox.SelectedIndex = 0;
+            if (runCollections != null && runCollections.Count > 0)
+            {
+                guidComboBox.ItemsSource = runCollections;
+                guidComboBox.DisplayMemberPath = "ComponentGuid";
+                guidComboBox.SelectedIndex = 0;
+            }
         }
 
         private void guidComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            RunCollection r = e.AddedItems[0] as RunCollection;
-            selectedRC = r;
-            runs = r.Runs;
-            
+            RunCollection rc = e.AddedItems[0] as RunCollection;
+            selectedRC = rc;
+            runs = selectedRC.Runs;
+
             runComboBox.ItemsSource = runs;
             runComboBox.DisplayMemberPath = "RunName";
             runComboBox.SelectedIndex = 0;
@@ -58,10 +60,14 @@ namespace LMNA.Lyrebird
 
         private void runComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Runs r = e.AddedItems[0] as Runs;
-            selectedRun = r;
-            exampleLabel.Content = r.FamilyType;
-            qtyLabel.Content = r.ElementIds.Count.ToString();
+            try
+            {
+                Runs r = e.AddedItems[0] as Runs;
+                selectedRun = r;
+                exampleLabel.Content = r.FamilyType;
+                qtyLabel.Content = r.ElementIds.Count.ToString();
+            }
+            catch { }
         }
 
         private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

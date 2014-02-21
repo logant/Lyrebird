@@ -777,7 +777,7 @@ namespace LMNA.Lyrebird
                         volumeDUT = fo.DisplayUnits;
 
                         // Find existing elements
-                        List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId);
+                        List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId, -1);
                         // find if there's more than one run existing
                         Schema instanceSchema = Schema.Lookup(instanceSchemaGUID);
                         List<int> runIds = new List<int>();
@@ -833,52 +833,67 @@ namespace LMNA.Lyrebird
                             ModifyForm mform = new ModifyForm(this, allRuns);
                             mform.ShowDialog();
 
+                            // Get the set of existing elements to reflect the run choice.
+                            List<ElementId> existingRunEID = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId, runId);
+
                             // modBehavior = 0, Modify the selected run
                             if (modBehavior == 0)
                             {
-                                // Collect all elements that match the run
-                                List<ElementId> modExisting = new List<ElementId>();
-                                foreach (ElementId eid in existing)
-                                {
-                                    Element e = uiApp.ActiveUIDocument.Document.GetElement(eid);
-                                    // Find the run ID
-                                    Entity entity = e.GetEntity(instanceSchema);
-                                    if (entity.IsValid())
-                                    {
-                                        Field f = instanceSchema.GetField("RunID");
-                                        int tempId = entity.Get<int>(f);
-                                        if (tempId == runId)
-                                        {
-                                            modExisting.Add(eid);
-                                        }
-                                    }
-                                }
-                                if (modExisting.Count == incomingObjs.Count)
+                                // TODO: I think this is depreciated.  Test and remove.
+                                //// Collect all elements that match the run
+                                //List<ElementId> modExisting = new List<ElementId>();
+                                //foreach (ElementId eid in existing)
+                                //{
+                                //    Element e = uiApp.ActiveUIDocument.Document.GetElement(eid);
+                                //    // Find the run ID
+                                //    Entity entity = e.GetEntity(instanceSchema);
+                                //    if (entity.IsValid())
+                                //    {
+                                //        Field f = instanceSchema.GetField("RunID");
+                                //        int tempId = entity.Get<int>(f);
+                                //        if (tempId == runId)
+                                //        {
+                                //            modExisting.Add(eid);
+                                //        }
+                                //    }
+                                //}
+                                if (existingRunEID.Count == incomingObjs.Count)
                                 {
                                     // just modify
-                                    ModifyObjects(incomingObjs, modExisting, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                    ModifyObjects(incomingObjs, existingRunEID, uiApp.ActiveUIDocument.Document, uniqueId, true);
                                 }
-                                else if (modExisting.Count > incomingObjs.Count)
+                                else if (existingRunEID.Count > incomingObjs.Count)
                                 {
-                                    // modify and delete
                                     // Modify and Delete
-                                    List<RevitObject> existingObjects = new List<RevitObject>();
+                                    List<ElementId> modObjects = new List<ElementId>();
                                     List<ElementId> removeObjects = new List<ElementId>();
 
                                     int i = 0;
                                     while (i < incomingObjs.Count)
                                     {
-                                        existingObjects.Add(incomingObjs[i]);
+                                        modObjects.Add(existingRunEID[i]);
                                         i++;
                                     }
-                                    while (existing != null && i < existing.Count)
+                                    while (existingRunEID != null && i < existingRunEID.Count)
                                     {
-                                        removeObjects.Add(existing[i]);
+                                        Element e = uiApp.ActiveUIDocument.Document.GetElement(existing[i]);
+                                        // Find the run ID
+                                        Entity entity = e.GetEntity(instanceSchema);
+                                        if (entity.IsValid())
+                                        {
+                                            removeObjects.Add(existingRunEID[i]);
+                                            //Field f = instanceSchema.GetField("RunID");
+                                            //int tempId = entity.Get<int>(f);
+                                            //if (tempId == runId)
+                                            //{
+                                            //    removeObjects.Add(existing[i]);
+                                            //}
+                                        }
                                         i++;
                                     }
                                     try
                                     {
-                                        ModifyObjects(existingObjects, modExisting, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                        ModifyObjects(incomingObjs, modObjects, uiApp.ActiveUIDocument.Document, uniqueId, true);
                                         DeleteExisting(uiApp.ActiveUIDocument.Document, removeObjects);
                                     }
                                     catch (Exception ex)
@@ -886,7 +901,7 @@ namespace LMNA.Lyrebird
                                         Debug.WriteLine(ex.Message);
                                     }
                                 }
-                                else if (modExisting.Count < incomingObjs.Count)
+                                else if (existingRunEID.Count < incomingObjs.Count)
                                 {
                                     // modify and create
                                     // create and modify
@@ -895,7 +910,7 @@ namespace LMNA.Lyrebird
 
                                     int i = 0;
                                     Debug.Assert(existing != null, "existing != null");
-                                    while (i < existing.Count)
+                                    while (i < existingRunEID.Count)
                                     {
                                         existingObjects.Add(incomingObjs[i]);
                                         i++;
@@ -907,7 +922,7 @@ namespace LMNA.Lyrebird
                                     }
                                     try
                                     {
-                                        ModifyObjects(existingObjects, modExisting, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                        ModifyObjects(existingObjects, existingRunEID, uiApp.ActiveUIDocument.Document, uniqueId, true);
                                         CreateObjects(newObjects, uiApp.ActiveUIDocument.Document, uniqueId, runId);
                                     }
                                     catch (Exception ex)
@@ -962,7 +977,7 @@ namespace LMNA.Lyrebird
                     }
                     catch (Exception ex)
                     {
-                        TaskDialog.Show("Test", "test");
+                        TaskDialog.Show("Test", ex.Message);
                         Debug.WriteLine(ex.Message);
                     }
                     finally
@@ -2173,6 +2188,9 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                // Create a filed to store the run number
+                                FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
+                                runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
                                 sb.SetSchemaName("LMNtsInstanceGUID");
                                 instanceSchema = sb.Finish();
@@ -2327,6 +2345,9 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                // Create a filed to store the run number
+                                FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
+                                runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
                                 sb.SetSchemaName("LMNtsInstanceGUID");
                                 instanceSchema = sb.Finish();
@@ -3246,7 +3267,7 @@ namespace LMNA.Lyrebird
             //return succeeded;
         }
 
-        private List<ElementId> FindExisting(Document doc, Guid uniqueId, int categoryId)
+        private List<ElementId> FindExisting(Document doc, Guid uniqueId, int categoryId, int runid)
         {
             // Find existing elements with a matching GUID from the GH component.
             List<ElementId> existingElems = new List<ElementId>();
@@ -3274,7 +3295,19 @@ namespace LMNA.Lyrebird
                             string tempId = entity.Get<string>(f);
                             if (tempId == uniqueId.ToString())
                             {
-                                existingElems.Add(w.Id);
+                                if (runid == -1)
+                                {
+                                    existingElems.Add(w.Id);
+                                }
+                                else
+                                {
+                                    f = instanceSchema.GetField("RunID");
+                                    int id = entity.Get<int>(f);
+                                    if (id == runid)
+                                    {
+                                        existingElems.Add(w.Id);
+                                    }
+                                }
                             }
                         }
                     }
@@ -3300,7 +3333,19 @@ namespace LMNA.Lyrebird
                             string tempId = entity.Get<string>(f);
                             if (tempId == uniqueId.ToString())
                             {
-                                existingElems.Add(flr.Id);
+                                if (runid == -1)
+                                {
+                                    existingElems.Add(flr.Id);
+                                }
+                                else
+                                {
+                                    f = instanceSchema.GetField("RunID");
+                                    int id = entity.Get<int>(f);
+                                    if (id == runid)
+                                    {
+                                        existingElems.Add(flr.Id);
+                                    }
+                                }
                             }
                         }
                     }
@@ -3326,7 +3371,19 @@ namespace LMNA.Lyrebird
                             string tempId = entity.Get<string>(f);
                             if (tempId == uniqueId.ToString())
                             {
-                                existingElems.Add(r.Id);
+                                if (runid == -1)
+                                {
+                                    existingElems.Add(r.Id);
+                                }
+                                else
+                                {
+                                    f = instanceSchema.GetField("RunID");
+                                    int id = entity.Get<int>(f);
+                                    if (id == runid)
+                                    {
+                                        existingElems.Add(r.Id);
+                                    }
+                                }
                             }
                         }
                     }
@@ -3355,7 +3412,19 @@ namespace LMNA.Lyrebird
                                 string tempId = entity.Get<string>(f);
                                 if (tempId == uniqueId.ToString())
                                 {
-                                    existingElems.Add(e.Id);
+                                    if (runid == -1)
+                                    {
+                                        existingElems.Add(fi.Id);
+                                    }
+                                    else
+                                    {
+                                        f = instanceSchema.GetField("RunID");
+                                        int id = entity.Get<int>(f);
+                                        if (id == runid)
+                                        {
+                                            existingElems.Add(fi.Id);
+                                        }
+                                    }
                                 }
                             }
                         }

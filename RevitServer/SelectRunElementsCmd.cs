@@ -31,8 +31,7 @@ namespace LMNA.Lyrebird
                 
                 if (allRuns != null && allRuns.Count > 0)
                 {
-                    SelectRunsForm form = new SelectRunsForm(allRuns, commandData.Application.ActiveUIDocument);
-                    form.ShowDialog();
+                    RevitServerApp._app.ShowSelectionForm(allRuns, commandData.Application.ActiveUIDocument);
                 }
                 else
                 {

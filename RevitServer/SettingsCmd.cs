@@ -15,7 +15,7 @@ namespace LMNA.Lyrebird
         {
             try
             {
-                RevitServerApp._app.ShowForm();
+                RevitServerApp._app.ShowSettingsForm();
             }
             catch (Exception exception)
             {
