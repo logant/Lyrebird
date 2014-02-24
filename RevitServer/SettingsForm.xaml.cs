@@ -25,7 +25,6 @@ namespace LMNA.Lyrebird
         bool supressWarning = false;
         bool defaultOn = true;
         int timeOut = 200;
-        int createTimeout = 200;
 
         RevitServerApp app;
 
@@ -37,9 +36,7 @@ namespace LMNA.Lyrebird
             supressProfileCheckBox.IsChecked = Properties.Settings.Default.suppressWarning;
             defaultOnCheckBox.IsChecked = Properties.Settings.Default.defaultServerOn;
             timeOut = Properties.Settings.Default.infoTimeout;
-            createTimeout = Properties.Settings.Default.serverTimeout;
             timeoutTextBox.Text = timeOut.ToString();
-            createModifyTimeoutTextBox.Text = createTimeout.ToString();
         }
 
         private void enabledCheckBox_Checked(object sender, RoutedEventArgs e)
@@ -81,15 +78,6 @@ namespace LMNA.Lyrebird
             catch { }
         }
 
-        private void createModifyTimeoutTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            try
-            {
-                createTimeout = Convert.ToInt32(createModifyTimeoutTextBox.Text);
-            }
-            catch { }
-        }
-
         private void okButton_Click(object sender, RoutedEventArgs e)
         {
             // Change the settings
@@ -97,7 +85,6 @@ namespace LMNA.Lyrebird
             Properties.Settings.Default.suppressWarning = supressWarning;
             Properties.Settings.Default.defaultServerOn = defaultOn;
             Properties.Settings.Default.infoTimeout = timeOut;
-            Properties.Settings.Default.serverTimeout = createTimeout;
             Properties.Settings.Default.Save();
             
             // If necessary, disable or enable the server

@@ -23,7 +23,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         List<string> GetTypeNames(RevitObject familyName);
 
         [OperationContract]
-        bool CreateOrModify(List<RevitObject> objects, Guid uniqueId);
+        bool CreateOrModify(List<RevitObject> objects, Guid uniqueId, string nickName);
 
     }
 }

@@ -20,7 +20,6 @@ namespace LMNA.Lyrebird
         private List<RevitObject> familyNames = new List<RevitObject>();
         private List<string> typeNames = new List<string>();
         private List<RevitParameter> parameters = new List<RevitParameter>();
-        //private List<LyrebirdId> uniqueIds = new List<LyrebirdId>();
 
         private int modBehavior;
         private int runId;
@@ -759,7 +758,7 @@ namespace LMNA.Lyrebird
             return parameters;
         }
 
-        public bool CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId)
+        public bool CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId, string nickName)
         {
             lock (_locker)
             {
@@ -778,6 +777,7 @@ namespace LMNA.Lyrebird
 
                         // Find existing elements
                         List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId, -1);
+                        
                         // find if there's more than one run existing
                         Schema instanceSchema = Schema.Lookup(instanceSchemaGUID);
                         List<int> runIds = new List<int>();
@@ -835,32 +835,14 @@ namespace LMNA.Lyrebird
 
                             // Get the set of existing elements to reflect the run choice.
                             List<ElementId> existingRunEID = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId, runId);
-
+                            
                             // modBehavior = 0, Modify the selected run
                             if (modBehavior == 0)
                             {
-                                // TODO: I think this is depreciated.  Test and remove.
-                                //// Collect all elements that match the run
-                                //List<ElementId> modExisting = new List<ElementId>();
-                                //foreach (ElementId eid in existing)
-                                //{
-                                //    Element e = uiApp.ActiveUIDocument.Document.GetElement(eid);
-                                //    // Find the run ID
-                                //    Entity entity = e.GetEntity(instanceSchema);
-                                //    if (entity.IsValid())
-                                //    {
-                                //        Field f = instanceSchema.GetField("RunID");
-                                //        int tempId = entity.Get<int>(f);
-                                //        if (tempId == runId)
-                                //        {
-                                //            modExisting.Add(eid);
-                                //        }
-                                //    }
-                                //}
                                 if (existingRunEID.Count == incomingObjs.Count)
                                 {
                                     // just modify
-                                    ModifyObjects(incomingObjs, existingRunEID, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                    ModifyObjects(incomingObjs, existingRunEID, uiApp.ActiveUIDocument.Document, uniqueId, true, nickName, runId);
                                 }
                                 else if (existingRunEID.Count > incomingObjs.Count)
                                 {
@@ -893,7 +875,7 @@ namespace LMNA.Lyrebird
                                     }
                                     try
                                     {
-                                        ModifyObjects(incomingObjs, modObjects, uiApp.ActiveUIDocument.Document, uniqueId, true);
+                                        ModifyObjects(incomingObjs, modObjects, uiApp.ActiveUIDocument.Document, uniqueId, true, nickName, runId);
                                         DeleteExisting(uiApp.ActiveUIDocument.Document, removeObjects);
                                     }
                                     catch (Exception ex)
@@ -922,8 +904,8 @@ namespace LMNA.Lyrebird
                                     }
                                     try
                                     {
-                                        ModifyObjects(existingObjects, existingRunEID, uiApp.ActiveUIDocument.Document, uniqueId, true);
-                                        CreateObjects(newObjects, uiApp.ActiveUIDocument.Document, uniqueId, runId);
+                                        ModifyObjects(existingObjects, existingRunEID, uiApp.ActiveUIDocument.Document, uniqueId, true, nickName, runId);
+                                        CreateObjects(newObjects, uiApp.ActiveUIDocument.Document, uniqueId, runId, nickName);
                                     }
                                     catch (Exception ex)
                                     {
@@ -937,7 +919,7 @@ namespace LMNA.Lyrebird
                                 // Just send everything to create a new Run.
                                 try
                                 {
-                                    CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId, lastId + 1);
+                                    CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId, lastId + 1, nickName);
                                 }
                                 catch (Exception ex)
                                 {
@@ -966,7 +948,7 @@ namespace LMNA.Lyrebird
                                 // Create new
                                 try
                                 {
-                                    CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId, 0);
+                                    CreateObjects(incomingObjs, uiApp.ActiveUIDocument.Document, uniqueId, 0, nickName);
                                 }
                                 catch (Exception ex)
                                 {
@@ -985,7 +967,7 @@ namespace LMNA.Lyrebird
                         Monitor.Pulse(_locker);
                     }
                 });
-                Monitor.Wait(_locker, Properties.Settings.Default.serverTimeout);
+                Monitor.Wait(_locker, Properties.Settings.Default.infoTimeout);
             }
             return true;
         }
@@ -1008,7 +990,7 @@ namespace LMNA.Lyrebird
             return currentDocName;
         }
 
-        private void CreateObjects(List<RevitObject> revitObjects, Document doc, Guid uniqueId, int runId)
+        private void CreateObjects(List<RevitObject> revitObjects, Document doc, Guid uniqueId, int runId, string nickName)
         {
             // Create new Revit objects.
             //List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
@@ -1061,8 +1043,11 @@ namespace LMNA.Lyrebird
                                 // Create a filed to store the run number
                                 FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
                                 runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
+                                // Create a field to store the GH component nickname.
+                                FieldBuilder nickNameFB = sb.AddSimpleField("NickName", typeof(string));
+                                nickNameFB.SetDocumentation("Component NickName from Grasshopper");
 
-                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                sb.SetSchemaName("LMNAInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
                             FamilyInstance fi = null;
@@ -1115,7 +1100,7 @@ namespace LMNA.Lyrebird
                                     SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
-                                    AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                    AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
 
                                     x++;
                                 }
@@ -1163,7 +1148,7 @@ namespace LMNA.Lyrebird
                                     SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
-                                    AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                    AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
                                 }
                                 // delete the host finder
                                 ElementId hostFinderFamily = hostFinder.Symbol.Family.Id;
@@ -1219,11 +1204,16 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                
                                 // Create a filed to store the run number
                                 FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
                                 runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
 
-                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                // Create a field to store the GH component nickname.
+                                FieldBuilder nickNameFB = sb.AddSimpleField("NickName", typeof(string));
+                                nickNameFB.SetDocumentation("Component NickName from Grasshopper");
+
+                                sb.SetSchemaName("LMNAInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
                             try
@@ -1256,7 +1246,7 @@ namespace LMNA.Lyrebird
                                     SetParameters(fi, obj.Parameters, doc);
 
                                     // Assign the GH InstanceGuid
-                                    AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                    AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
                                 }
                                 
                             }
@@ -1352,7 +1342,7 @@ namespace LMNA.Lyrebird
                             }
                             catch (Exception ex)
                             {
-                              Debug.WriteLine(ex.Message);
+                                Debug.WriteLine(ex.Message);
                             }
                             if (instanceSchema == null)
                             {
@@ -1364,11 +1354,16 @@ namespace LMNA.Lyrebird
                                 // Create the field to store the data in the family
                                 FieldBuilder guidFB = sb.AddSimpleField("InstanceID", typeof(string));
                                 guidFB.SetDocumentation("Component instance GUID from Grasshopper");
+                                
                                 // Create a filed to store the run number
                                 FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
                                 runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
+                                
+                                // Create a field to store the GH component nickname.
+                                FieldBuilder nickNameFB = sb.AddSimpleField("NickName", typeof(string));
+                                nickNameFB.SetDocumentation("Component NickName from Grasshopper");
 
-                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                sb.SetSchemaName("LMNAInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
                             FamilyInstance fi = null;
@@ -1414,7 +1409,7 @@ namespace LMNA.Lyrebird
                                                 double offset = 0;
                                                 if (Math.Abs(UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
                                                 {
-                                                    offset = lvl.Elevation - UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT);
+                                                    offset = UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.Elevation;
                                                 }
                                                     
                                                 // Create the wall
@@ -1432,7 +1427,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(w, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(w, uniqueId, instanceSchema, 0);
+                                                AssignGuid(w, uniqueId, instanceSchema, 0, nickName);
                                             }
                                         }
                                         // See if it's a structural column
@@ -1468,7 +1463,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
                                             }
                                         }
 
@@ -1549,7 +1544,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
                                             }
                                         }
                                     }
@@ -1658,7 +1653,7 @@ namespace LMNA.Lyrebird
                                             SetParameters(w, obj.Parameters, doc);
 
                                             // Assign the GH InstanceGuid
-                                            AssignGuid(w, uniqueId, instanceSchema, 0);
+                                            AssignGuid(w, uniqueId, instanceSchema, 0, nickName);
 
                                         }
                                         else if (obj.CategoryId == -2000032)
@@ -1728,7 +1723,7 @@ namespace LMNA.Lyrebird
                                             SetParameters(flr, obj.Parameters, doc);
 
                                             // Assign the GH InstanceGuid
-                                            AssignGuid(flr, uniqueId, instanceSchema, 0);
+                                            AssignGuid(flr, uniqueId, instanceSchema, 0, nickName);
                                             
                                         }
                                         else if (obj.CategoryId == -2000035)
@@ -1767,7 +1762,7 @@ namespace LMNA.Lyrebird
                                             SetParameters(roof, obj.Parameters, doc);
                                             
                                             // Assign the GH InstanceGuid
-                                            AssignGuid(roof, uniqueId, instanceSchema, 0);
+                                            AssignGuid(roof, uniqueId, instanceSchema, 0, nickName);
                                         }
                                     }
                                     #endregion
@@ -1792,11 +1787,11 @@ namespace LMNA.Lyrebird
             #endregion
         }
 
-        private void ModifyObjects(List<RevitObject> existingObjects, List<ElementId> existingElems, Document doc, Guid uniqueId, bool profileWarning)
+        private void ModifyObjects(List<RevitObject> existingObjects, List<ElementId> existingElems, Document doc, Guid uniqueId, bool profileWarning, string nickName, int runId)
         {
             // Create new Revit objects.
             //List<LyrebirdId> newUniqueIds = new List<LyrebirdId>();
-
+            
             // Determine what kind of object we're creating.
             RevitObject ro = existingObjects[0];
 
@@ -1845,8 +1840,11 @@ namespace LMNA.Lyrebird
                                 // Create a filed to store the run number
                                 FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
                                 runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
+                                // Create a field to store the GH component nickname.
+                                FieldBuilder nickNameFB = sb.AddSimpleField("NickName", typeof(string));
+                                nickNameFB.SetDocumentation("Component NickName from Grasshopper");
 
-                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                sb.SetSchemaName("LMNAInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
                                 
@@ -1945,8 +1943,6 @@ namespace LMNA.Lyrebird
                                         }
                                     }
 
-                                    // Assign the parameters
-                                    SetParameters(fi, obj.Parameters, doc);
                                 }
                             }
                             else
@@ -2050,7 +2046,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
                                             }
                                         }
                                     }
@@ -2104,7 +2100,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(fi, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(fi, uniqueId, instanceSchema, runId);
+                                                AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
                                             }
 
                                             else
@@ -2118,6 +2114,7 @@ namespace LMNA.Lyrebird
                                                     ElementTransformUtils.MoveElement(doc, fi.Id, translation);
                                                 }
 
+                                                // Assign the parameters
                                                 SetParameters(fi, obj.Parameters, doc);
                                             }
                                         }
@@ -2191,8 +2188,11 @@ namespace LMNA.Lyrebird
                                 // Create a filed to store the run number
                                 FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
                                 runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
+                                // Create a field to store the GH component nickname.
+                                FieldBuilder nickNameFB = sb.AddSimpleField("NickName", typeof(string));
+                                nickNameFB.SetDocumentation("Component NickName from Grasshopper");
 
-                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                sb.SetSchemaName("LMNAInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
 
@@ -2348,8 +2348,11 @@ namespace LMNA.Lyrebird
                                 // Create a filed to store the run number
                                 FieldBuilder runIDFB = sb.AddSimpleField("RunID", typeof(int));
                                 runIDFB.SetDocumentation("RunID for when multiple runs are created from the same data");
+                                // Create a field to store the GH component nickname.
+                                FieldBuilder nickNameFB = sb.AddSimpleField("NickName", typeof(string));
+                                nickNameFB.SetDocumentation("Component NickName from Grasshopper");
 
-                                sb.SetSchemaName("LMNtsInstanceGUID");
+                                sb.SetSchemaName("LMNAInstanceGUID");
                                 instanceSchema = sb.Finish();
                             }
                             FamilyInstance fi = null;
@@ -2386,6 +2389,8 @@ namespace LMNA.Lyrebird
                                         List<LyrebirdPoint> curvePoints = lbc.ControlPoints.OrderBy(p => p.Z).ToList();
                                         // linear
                                         // can be a wall or line based family.
+
+                                        // Wall objects
                                         if (obj.CategoryId == -2000011)
                                         {
                                             // draw a wall
@@ -2759,7 +2764,7 @@ namespace LMNA.Lyrebird
                                                 SetParameters(w, obj.Parameters, doc);
 
                                                 // Assign the GH InstanceGuid
-                                                AssignGuid(w, uniqueId, instanceSchema, runId);
+                                                AssignGuid(w, uniqueId, instanceSchema, runId, nickName);
                                             }
                                             else if (supressedModify) // Just update the parameters and don't change the wall
                                             {
@@ -2887,7 +2892,7 @@ namespace LMNA.Lyrebird
                                                     SetParameters(flr, obj.Parameters, doc);
 
                                                     // Assign the GH InstanceGuid
-                                                    AssignGuid(flr, uniqueId, instanceSchema, runId);
+                                                    AssignGuid(flr, uniqueId, instanceSchema, runId, nickName);
                                                 }
                                                 else // The curves coming in should match the floor sketch.  Let's modify the floor's locationcurves to edit it's location/shape
                                                 {
@@ -2966,7 +2971,7 @@ namespace LMNA.Lyrebird
                                                         // Set the incoming parameters
                                                         SetParameters(flr, obj.Parameters, doc);
                                                         // Assign the GH InstanceGuid
-                                                        AssignGuid(flr, uniqueId, instanceSchema, runId);
+                                                        AssignGuid(flr, uniqueId, instanceSchema, runId, nickName);
                                                     }
                                                 }
                                             }
@@ -3084,7 +3089,7 @@ namespace LMNA.Lyrebird
                                                     SetParameters(roof, obj.Parameters, doc);
 
                                                     // Assign the GH InstanceGuid
-                                                    AssignGuid(roof, uniqueId, instanceSchema, runId);
+                                                    AssignGuid(roof, uniqueId, instanceSchema, runId, nickName);
                                                 }
                                                 else // The curves qty lines up, lets try to modify the roof sketch so we don't have to replace it.
                                                 {
@@ -3137,7 +3142,7 @@ namespace LMNA.Lyrebird
                                                         SetParameters(roof, obj.Parameters, doc);
 
                                                         // Assign the GH InstanceGuid
-                                                        AssignGuid(roof, uniqueId, instanceSchema, runId);
+                                                        AssignGuid(roof, uniqueId, instanceSchema, runId, nickName);
 
                                                         doc.Delete(origRoof.Id);
                                                     }
@@ -3216,7 +3221,7 @@ namespace LMNA.Lyrebird
                                                             SetParameters(roof, obj.Parameters, doc);
 
                                                             // Assign the GH InstanceGuid
-                                                            AssignGuid(roof, uniqueId, instanceSchema, runId);
+                                                            AssignGuid(roof, uniqueId, instanceSchema, runId, nickName);
 
                                                             doc.Delete(origRoof.Id);
                                                         }
@@ -3474,7 +3479,7 @@ namespace LMNA.Lyrebird
         private CurveArray GetCurveArray(IEnumerable<LyrebirdCurve> curves)
         {
             CurveArray crvArray = new CurveArray();
-
+            int i = 0;
             foreach (LyrebirdCurve lbc in curves)
             {
                 if (lbc.CurveType == "Circle")
@@ -3515,20 +3520,63 @@ namespace LMNA.Lyrebird
                         XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
                         controlPoints.Add(pt);
                     }
-                                                        
-                    if (lbc.Degree < 3)
+                    try
                     {
-                        HermiteSpline spline = HermiteSpline.Create(controlPoints, false);
-                        crvArray.Append(spline);
+                        // TODO: if Autodesk resovles the problem with 5 degree curves, switch back to this:
+                        //if (lbc.Degree < 3)
+                        //{
+                        //    HermiteSpline spline = HermiteSpline.Create(controlPoints, false);
+                        //    crvArray.Append(spline);
+                        //}
+                        //else
+                        //{
+                        //    NurbSpline spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
+                        //    crvArray.Append(spline);
+                        //}
+
+                        if (lbc.Degree == 3)
+                        {
+                            NurbSpline spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
+                            crvArray.Append(spline);
+                        }
+                        else
+                        {
+                            HermiteSpline spline = HermiteSpline.Create(controlPoints, false);
+                            crvArray.Append(spline);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        NurbSpline spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
-                        crvArray.Append(spline);
+                        //try
+                        //{
+                        //    NurbSpline spline = NurbSpline.Create(controlPoints, weights);
+                        //    crvArray.Append(spline);
+                        //}
+                        //catch { }
+                        //System.Text.StringBuilder firstKnots = new System.Text.StringBuilder();
+                        //System.Text.StringBuilder lastKnots = new System.Text.StringBuilder();
+                        //System.Text.StringBuilder allKnots = new System.Text.StringBuilder();
+                        //int knotCt = 0;
+                        //foreach (double d in knots)
+                        //{
+                        //    allKnots.AppendLine(knotCt.ToString() + ")\t" + d.ToString());
+                        //    knotCt++;
+                        //}
+                        //int y = knots.Count - 1;
+                        //for (int x = 0; x < (lbc.Degree + 1); x++)
+                        //{
+                        //    firstKnots.AppendLine(knots[x].ToString());
+                        //    lastKnots.AppendLine(knots[y - x].ToString());
+                        //}
+                        //TaskDialog.Show("Error" + i.ToString(), ex.Message);
+
+                        //TaskDialog.Show("Errord", "Degree: " + lbc.Degree.ToString() + "\nControl Pt Qty: " + controlPoints.Count.ToString() + "\nWeights Qty: " + weights.Count.ToString() + "\n" + allKnots.ToString());
+
+                        Debug.WriteLine("Error", ex.Message);
                     }
                 }
+                i++;
             }
-
             return crvArray;
         }
 
@@ -3591,7 +3639,7 @@ namespace LMNA.Lyrebird
                         }
                         else
                         {
-                            TaskDialog.Show("err", "Could not find family to load");
+                            TaskDialog.Show("Error", "Could not find family to load");
                         }
                     }
                     catch (Exception ex)
@@ -4175,15 +4223,29 @@ namespace LMNA.Lyrebird
         #endregion
 
         #region Assign the GUID
-        private void AssignGuid(FamilyInstance fi, Guid guid, Schema instanceSchema, int run)
+        private void AssignGuid(FamilyInstance fi, Guid guid, Schema instanceSchema, int run, string nickName)
         {
+            Entity entity = null;
             try
             {
-                Entity entity = new Entity(instanceSchema);
+                entity = fi.GetEntity(instanceSchema);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Error", ex.Message);
+            }
+            try
+            {
+                if (!entity.IsValid())
+                {
+                    entity = new Entity(instanceSchema);
+                }
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
                 field = instanceSchema.GetField("RunID");
                 entity.Set<int>(field, run);
+                field = instanceSchema.GetField("NickName");
+                entity.Set<string>(field, nickName);
                 fi.SetEntity(entity);
             }
             catch (Exception ex)
@@ -4192,32 +4254,62 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void AssignGuid(Wall wall, Guid guid, Schema instanceSchema, int run)
+        private void AssignGuid(Wall wall, Guid guid, Schema instanceSchema, int run, string nickName)
         {
+            Entity entity = null;
             try
             {
-                Entity entity = new Entity(instanceSchema);
+                entity = wall.GetEntity(instanceSchema);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Error", ex.Message);
+            }
+            
+            try
+            {
+                if (!entity.IsValid())
+                {
+                    entity = new Entity(instanceSchema);
+                }
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
                 field = instanceSchema.GetField("RunID");
                 entity.Set<int>(field, run);
+                field = instanceSchema.GetField("NickName");
+                entity.Set<string>(field, nickName);
                 wall.SetEntity(entity);
             }
             catch (Exception ex)
             {
                 TaskDialog.Show("Error", ex.Message);
             }
+            
         }
 
-        private void AssignGuid(Floor floor, Guid guid, Schema instanceSchema, int run)
+        private void AssignGuid(Floor floor, Guid guid, Schema instanceSchema, int run, string nickName)
         {
+            Entity entity = null;
             try
             {
-                Entity entity = new Entity(instanceSchema);
+                entity = floor.GetEntity(instanceSchema);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Error", ex.Message);
+            }
+            try
+            {
+                if (!entity.IsValid())
+                {
+                    entity = new Entity(instanceSchema);
+                }
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
                 field = instanceSchema.GetField("RunID");
                 entity.Set<int>(field, run);
+                field = instanceSchema.GetField("NickName");
+                entity.Set<string>(field, nickName);
                 floor.SetEntity(entity);
             }
             catch (Exception ex)
@@ -4226,15 +4318,29 @@ namespace LMNA.Lyrebird
             }
         }
 
-        private void AssignGuid(FootPrintRoof roof, Guid guid, Schema instanceSchema, int run)
+        private void AssignGuid(FootPrintRoof roof, Guid guid, Schema instanceSchema, int run, string nickName)
         {
+            Entity entity = null;
             try
             {
-                Entity entity = new Entity(instanceSchema);
+                entity = roof.GetEntity(instanceSchema);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Error", ex.Message);
+            }
+            try
+            {
+                if (!entity.IsValid())
+                {
+                    entity = new Entity(instanceSchema);
+                }
                 Field field = instanceSchema.GetField("InstanceID");
                 entity.Set<string>(field, guid.ToString());
                 field = instanceSchema.GetField("RunID");
                 entity.Set<int>(field, run);
+                field = instanceSchema.GetField("NickName");
+                entity.Set<string>(field, nickName);
                 roof.SetEntity(entity);
             }
             catch (Exception ex)

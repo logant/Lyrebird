@@ -8,7 +8,7 @@
              Background="Transparent"
              WindowStyle="None"
              AllowsTransparency="True"
-             d:DesignHeight="240" d:DesignWidth="300" 
+             d:DesignHeight="200" d:DesignWidth="280" 
              WindowStartupLocation="Manual">
     <Window.Resources>
         <Style x:Key="typicalButtonStyle" TargetType="Button">
@@ -43,7 +43,7 @@
         
     </Window.Resources>
     <Border Background="Transparent" MouseLeftButtonDown="Border_MouseLeftButtonDown">
-        <Grid Width="300" Height="240">
+        <Grid Width="280" Height="200">
             <Rectangle Fill="#FF460022" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,5,5,5">
                 <Rectangle.Effect>
                     <BlurEffect Radius="10"/>
@@ -107,14 +107,8 @@
             <CheckBox Name="enabledCheckBox" Content="Server Enabled (Temporary)" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,50,0,0" Foreground="#Ff424242" Checked="enabledCheckBox_Checked" Unchecked="enabledCheckBox_Unchecked"/>
             <CheckBox Name="supressProfileCheckBox" Content="Suppress profile modification warnings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,75,0,0" Foreground="#FF424242" Checked="supressProfileCheckBox_Checked" Unchecked="supressProfileCheckBox_Unchecked"/>
             <CheckBox Name="defaultOnCheckBox" Content="Default server to be on at startup" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,100,0,0" Foreground="#FF424242" Checked="defaultOnCheckBox_Checked" Unchecked="defaultOnCheckBox_Unchecked"/>
-            <GroupBox Name="timeoutGroupBox" Header="Service Time Outs (in milliseconds)" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="15,120,15,40">
-                <Grid>
-                    <Label Content="Get Info: " HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,5,0,0" Foreground="#FF424242"/>
-                    <TextBox Name="timeoutTextBox" Text="200" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="100,5,5,0" TextChanged="timeoutTextBox_TextChanged"/>
-                    <Label Content="Create/Modify:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,30,0,0" Foreground="#FF424242"/>
-                    <TextBox Name="createModifyTimeoutTextBox" Text="200" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="100,30,5,0" TextChanged="createModifyTimeoutTextBox_TextChanged"/>
-                </Grid>
-            </GroupBox>
+            <Label Content="Service Timeout (in milliseconds): " HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,120,0,0" Foreground="#FF424242"/>
+            <TextBox Name="timeoutTextBox" Text="200" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="200,122,15,0" TextChanged="timeoutTextBox_TextChanged"/>
         </Grid>
     </Border>
 </Window>

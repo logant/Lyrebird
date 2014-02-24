@@ -14,7 +14,7 @@ namespace LMNA.Lyrebird
 {
     public class RevitServerApp : IExternalApplication
     {
-        bool serverActive;
+        bool serverActive = false;
         static RibbonItem serverButton;
         ServiceHost serviceHost;
         readonly string addr = @"net.pipe://localhost/LMNts/LyrebirdServer/Revit";
@@ -70,7 +70,6 @@ namespace LMNA.Lyrebird
             
             _app = this;
             serverActive = Properties.Settings.Default.defaultServerOn;
-
             // Create the button
             try
             {

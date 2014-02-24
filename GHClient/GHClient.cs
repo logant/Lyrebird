@@ -258,7 +258,7 @@ namespace LMNA.Lyrebird.GH
                             {
                                 // Determine if the curve is a closed planar curve
                                 Curve tempCrv = curves.Branches[0][0].Value;
-                                if (tempCrv.IsPlanar() && tempCrv.IsClosed)
+                                if (tempCrv.IsPlanar(0.00000001) && tempCrv.IsClosed)
                                 {
                                     // Closed planar curve
                                     List<RevitObject> tempObjs = new List<RevitObject>();
@@ -447,7 +447,7 @@ namespace LMNA.Lyrebird.GH
                                                 allInterior = false;
                                                 message = "Warning:\n\nEach Branch represents an object, " +
                                                 "so curve based elements should be grafted so that each curve is on it's own branch, or all curves on a branch should " +
-                                            "be interior to the largest, outer boundary.";
+                                                "be interior to the largest, outer boundary.";
                                             }
                                         }
                                         catch
@@ -456,7 +456,7 @@ namespace LMNA.Lyrebird.GH
                                             // Inform the user they need to graft their inputs.  Only one curve per branch
                                             message = "Warning:\n\nEach Branch represents an object, " +
                                                 "so curve based elements should be grafted so that each curve is on it's own branch, or all curves on a branch should " +
-                                            "be interior to the largest, outer boundary.";
+                                                "be interior to the largest, outer boundary.";
                                         }
                                     }
                                     if (tempObjs.Count > 0)
@@ -548,7 +548,12 @@ namespace LMNA.Lyrebird.GH
                                 }
                                 else
                                 {
-                                    channel.CreateOrModify(obj, InstanceGuid);
+                                    string nn = NickName;
+                                    if (nn == null || nn.Length == 0)
+                                    {
+                                        nn = "LBOut";
+                                    }
+                                    channel.CreateOrModify(obj, InstanceGuid, NickName);
                                     message = obj.Count.ToString() + " objects sent to the lyrebird server.";
                                 }
                             }
@@ -930,7 +935,8 @@ namespace LMNA.Lyrebird.GH
             else
             {
                 // Spline
-                if (crv.Degree >= 3)
+                // Old line: if (crv.Degree >= 3)
+                if (crv.Degree == 3)
                 {
                     NurbsCurve nc = crv as NurbsCurve;
                     if (nc != null)

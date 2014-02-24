@@ -136,9 +136,13 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         [DataMember]
         public string GHPath { get; set; }
 
-        public LyrebirdId(string uniqueId, string ghPath)
+        [DataMember]
+        public string GHName { get; set; }
+
+        public LyrebirdId(string uniqueId, string ghName, string ghPath)
         {
             UniqueId = uniqueId;
+            GHName = ghName;
             GHPath = ghPath;
         }
     }
@@ -260,6 +264,9 @@ namespace LMNA.Lyrebird.LyrebirdCommon
 
         [DataMember]
         public List<Runs> Runs { get; set; }
+
+        [DataMember]
+        public string NickName { get; set; }
 
         public RunCollection()
         {

@@ -227,7 +227,10 @@ namespace LMNA.Lyrebird
                                     string tempId = entity.Get<string>(f);
                                     if (tempId == id)
                                     {
+                                        f = instanceSchema.GetField("NickName");
+                                        string nickName = entity.Get<string>(f);
                                         rc.ComponentGuid = new Guid(tempId);
+                                        rc.NickName = nickName;
                                         f = instanceSchema.GetField("RunID");
                                         int tempRunId = entity.Get<int>(f);
 
@@ -259,7 +262,10 @@ namespace LMNA.Lyrebird
                                     string tempId = entity.Get<string>(f);
                                     if (tempId == id)
                                     {
+                                        f = instanceSchema.GetField("NickName");
+                                        string nickName = entity.Get<string>(f);
                                         rc.ComponentGuid = new Guid(tempId);
+                                        rc.NickName = nickName;
                                         f = instanceSchema.GetField("RunID");
                                         int tempRunId = entity.Get<int>(f);
 
@@ -291,7 +297,10 @@ namespace LMNA.Lyrebird
                                     string tempId = entity.Get<string>(f);
                                     if (tempId == id)
                                     {
+                                        f = instanceSchema.GetField("NickName");
+                                        string nickName = entity.Get<string>(f);
                                         rc.ComponentGuid = new Guid(tempId);
+                                        rc.NickName = nickName;
                                         f = instanceSchema.GetField("RunID");
                                         int tempRunId = entity.Get<int>(f);
 
@@ -323,7 +332,10 @@ namespace LMNA.Lyrebird
                                     string tempId = entity.Get<string>(f);
                                     if (tempId == id)
                                     {
+                                        f = instanceSchema.GetField("NickName");
+                                        string nickName = entity.Get<string>(f);
                                         rc.ComponentGuid = new Guid(tempId);
+                                        rc.NickName = nickName;
                                         f = instanceSchema.GetField("RunID");
                                         int tempRunId = entity.Get<int>(f);
 

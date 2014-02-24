@@ -30,6 +30,8 @@ namespace LMNA.Lyrebird
         Runs selectedRun;
         UIDocument uiDoc;
 
+        List<string> runNames;
+
         LinearGradientBrush enterBrush = null;
 
         public SelectRunsForm(List<RunCollection> rcs, UIDocument _uiDoc)
@@ -37,19 +39,32 @@ namespace LMNA.Lyrebird
             runCollections = rcs;
             uiDoc = _uiDoc;
             InitializeComponent();
+            runNames = new List<string>();
+            for (int i = 0; i < runCollections.Count; i++)
+            {
+                string value = runCollections[i].NickName + " : " + runCollections[i].ComponentGuid.ToString();
+                runNames.Add(value);
+            }
 
             // Setup the data.
             if (runCollections != null && runCollections.Count > 0)
             {
-                guidComboBox.ItemsSource = runCollections;
-                guidComboBox.DisplayMemberPath = "ComponentGuid";
+                guidComboBox.ItemsSource = runNames;
+                //guidComboBox.DisplayMemberPath = "ComponentGuid";
                 guidComboBox.SelectedIndex = 0;
             }
         }
 
         private void guidComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            RunCollection rc = e.AddedItems[0] as RunCollection;
+            string value = e.AddedItems[0] as string;
+            int selection = 0;
+            for (int i = 0; i < runNames.Count; i++)
+            {
+                if (value == runNames[i])
+                    selection = i;
+            }
+            RunCollection rc = runCollections[selection];
             selectedRC = rc;
             runs = selectedRC.Runs;
 

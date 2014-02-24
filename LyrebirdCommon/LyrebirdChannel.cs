@@ -145,13 +145,13 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         //    return false;
         //}
 
-        public bool CreateOrModify(List<RevitObject> objects, Guid uniqueId)
+        public bool CreateOrModify(List<RevitObject> objects, Guid uniqueId, string nickName)
         {
             if (IsValid())
             {
                 try
                 {
-                    bool finished = _channel.CreateOrModify(objects, uniqueId);
+                    bool finished = _channel.CreateOrModify(objects, uniqueId, nickName);
                     return finished;
                 }
                 catch
