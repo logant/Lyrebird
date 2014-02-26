@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="18fb2548-fa6b-4102-ba67-dd04468a26d0" UpgradeCode="88140912-1ee7-4e1f-a17d-4b10a1b4a597" Version="1.0.0.0" Language="1033" Name="Lyrebird" Manufacturer="LMN Tech Studio">
+        <Package InstallerVersion="300" Compressed="yes"/>
+		<Media Id='1' Cabinet='Sample.cab' EmbedCab='yes'/>
+		
+        <!-- Step 1: Define the directory structure -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="AppDataFolder">
+				<Directory Id="GHRoot" Name="Grasshopper">
+					<Directory Id="GRASSHOPPERROOTDIRECTORY" Name="Libraries"/>
+				</Directory>
+				<Directory Id="ADSKRoot" Name="Autodesk">
+					<Directory Id="RevitRoot" Name="Revit">
+						<Directory Id="AddinsRoot" Name="Addins">
+							<Directory Id="REVITROOTDIRECTORY" Name="2014"/>
+						</Directory>
+					</Directory>
+				</Directory>
+            </Directory>
+        </Directory>
+
+        <!-- Step 2: Add files to your installer package -->
+        <DirectoryRef Id="GRASSHOPPERROOTDIRECTORY">
+            <Component Id="MainGHA" Guid="c12ac2a9-5608-412b-bfe2-7b29529659b5">
+                <File Id="LMNA.Lyrebird.GHClient.gha" Source="Grasshopper\LMNA.Lyrebird.GHClient.gha" KeyPath="yes" Checksum="yes"/>
+            </Component>
+            <Component Id="GHCommon" Guid="00a91b18-df94-4c12-a275-adc3200bdebb">
+                <File Id="LMNA.Lyrebird.LyrebirdCommon.dll" Source="Grasshopper\LMNA.Lyrebird.LyrebirdCommon.dll" KeyPath="yes"/>
+            </Component>
+        </DirectoryRef>
+		<DirectoryRef Id="REVITROOTDIRECTORY">
+		    <Component Id="MainRevitDLL" Guid="1b15b00d-7caf-493c-8f36-cffbe7c211f5">
+                <File Id="LMNA.Lyrebird.RevitServer.dll" Source="Revit\LMNA.Lyrebird.RevitServer.dll" KeyPath="yes" Checksum="yes"/>
+            </Component>
+            <Component Id="RevitCommon" Guid="e686f177-636e-4d2c-a1c5-879d66b54fac">
+                <File Id="RLMNA.Lyrebird.LyrebirdCommon.dll" Source="Revit\LMNA.Lyrebird.LyrebirdCommon.dll" KeyPath="yes"/>
+            </Component>
+			<Component Id="RevitAddin" Guid="fecb44ed-7197-4e53-b580-0393d61e7ef5">
+                <File Id="LMNA.Lyrebird.RevitServer.addin" Source="Revit\LMNA.Lyrebird.RevitServer.addin" KeyPath="yes"/>
+            </Component>
+		</DirectoryRef>
+
+        <!-- Step 3: Tell WiX to install the files -->
+        <Feature Id="MainApplication" Title="Main Application" Level="1">
+            <ComponentRef Id="MainGHA" />
+            <ComponentRef Id="GHCommon" />
+			<ComponentRef Id="MainRevitDLL" />
+			<ComponentRef Id="RevitCommon" />
+			<ComponentRef Id="RevitAddin" />
+        </Feature>
+    </Product>
+</Wix>
