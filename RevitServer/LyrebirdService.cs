@@ -1052,21 +1052,55 @@ namespace LMNA.Lyrebird
                             }
                             FamilyInstance fi = null;
                             XYZ origin = XYZ.Zero;
+                            
+                            // TODO: write some tag creation options.  Need to find the elem to tag, and determine tag orientation
+                            //if (revitObjects[0].CategoryId == -2005011)
+                            //{
+                            //    foreach (RevitObject obj in revitObjects)
+                            //    {
+                            //        IndependentTag tag;
+                            //        try
+                            //        {
+
+                            //        }
+                            //        catch (Exception ex)
+                            //        {
+                            //            Debug.WriteLine("Error", ex.Message);
+                            //        }
+                            //    }
+                            //}
+                            
                             if (hostBehavior == 0)
                             {
                                 int x = 0;
                                 foreach (RevitObject obj in revitObjects)
                                 {
-                                    try
+                                    if (obj.CategoryId == -2002000 || obj.CategoryId == -2000150)
                                     {
-                                        origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
-                                        fi = doc.Create.NewFamilyInstance(origin, symbol, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                        // create a detail component (-2002000) or generic annotation (-2000150) component
+                                        try
+                                        {
+                                            origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
+                                            fi = doc.Create.NewFamilyInstance(origin, symbol, doc.ActiveView);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Debug.WriteLine("Error", ex.Message);
+                                        }
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        TaskDialog.Show("Error", ex.Message);
+                                        try
+                                        {
+                                            origin = new XYZ(UnitUtils.ConvertToInternalUnits(obj.Origin.X, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
+                                            fi = doc.Create.NewFamilyInstance(origin, symbol, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            TaskDialog.Show("Error", ex.Message);
+                                        }
                                     }
-                                    
+
                                     // Rotate
                                     if (obj.Orientation != null)
                                     {
@@ -1095,7 +1129,6 @@ namespace LMNA.Lyrebird
                                             ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
                                         }
                                     }
-
                                     // Assign the parameters
                                     SetParameters(fi, obj.Parameters, doc);
 
@@ -1942,7 +1975,7 @@ namespace LMNA.Lyrebird
                                             ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
                                         }
                                     }
-
+                                    SetParameters(fi, obj.Parameters, doc);
                                 }
                             }
                             else
