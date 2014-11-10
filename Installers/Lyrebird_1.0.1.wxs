@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-    <Product Id="18fb2548-fa6b-4102-ba67-dd04468a26d0" UpgradeCode="88140912-1ee7-4e1f-a17d-4b10a1b4a597" Version="1.0.0.0" Language="1033" Name="LMNts Lyrebird" Manufacturer="LMN Tech Studio">
+    <Product Id="18fb2548-fa6b-4102-ba67-dd04468a26d0" UpgradeCode="88140912-1ee7-4e1f-a17d-4b10a1b4a597" Version="1.0.0.0" Language="1033" Name="Lyrebird" Manufacturer="LMN Tech Studio">
         <Package InstallerVersion="300" Compressed="yes"/>
 		<Media Id='1' Cabinet='Sample.cab' EmbedCab='yes'/>
 		

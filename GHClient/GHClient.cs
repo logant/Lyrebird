@@ -70,11 +70,12 @@ namespace LMNA.Lyrebird.GH
         private string category = "Not Selected";
         private int categoryId = -1;
         private List<LyrebirdId> uniqueIDs = new List<LyrebirdId>();
-        int appVersion = 1;
+        int appVersion = Properties.Settings.Default.RevitVersion;
 
         bool paramNamesEnabled = true;
         bool r2014 = true;
         bool r2015 = false;
+        bool r2016 = false;
 
         public List<RevitParameter> InputParams
         {
@@ -115,6 +116,24 @@ namespace LMNA.Lyrebird.GH
         public GHClient()
             : base("Lyrebird Out", "LBOut", "Send data from GH to another application", "LMNts", "Utilities")
         {
+            if (appVersion == 1)
+            {
+                r2014 = true;
+                r2015 = false;
+                r2016 = false;
+            }
+            else if (appVersion == 2)
+            {
+                r2014 = false;
+                r2015 = true;
+                r2016 = false;
+            }
+            else if (appVersion == 3)
+            {
+                r2014 = false;
+                r2015 = false;
+                r2016 = true;
+            }
         }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
@@ -661,6 +680,7 @@ namespace LMNA.Lyrebird.GH
             System.Windows.Forms.ToolStripMenuItem appItem = Menu_AppendItem(iMenu, "Application");
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2014", Menu_R2014Clicked, true, r2014));
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2015", Menu_R2015Clicked, true, r2015));
+            appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2016", Menu_R2016Clicked, true, r2016));
         }
 
         private void Menu_R2014Clicked(object sender, EventArgs e)
@@ -669,6 +689,7 @@ namespace LMNA.Lyrebird.GH
             if (r2014)
             {
                 r2015 = false;
+                r2016 = false;
             }
             appVersion = 1;
         }
@@ -679,8 +700,20 @@ namespace LMNA.Lyrebird.GH
             if (r2015)
             {
                 r2014 = false;
+                r2016 = false;
             }
             appVersion = 2;
+        }
+
+        private void Menu_R2016Clicked(object sender, EventArgs e)
+        {
+            r2016 = !r2016;
+            if (r2016)
+            {
+                r2014 = false;
+                r2015 = false;
+            }
+            appVersion = 3;
         }
 
         private void Menu_ParamNamesClicked(object sender, EventArgs e)

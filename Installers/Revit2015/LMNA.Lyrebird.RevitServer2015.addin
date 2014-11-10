@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>LyrebirdServer</Name>
+    <Assembly>LMNA.Lyrebird.RevitServer2015.dll</Assembly>
+    <AddInId>6a820e57-bb68-4bc4-a8a3-26134810c4be</AddInId>
+    <FullClassName>LMNA.Lyrebird.RevitServerApp</FullClassName>
+    <VendorId>LMNA</VendorId>
+    <VendorDescription>LMN Tech Studio, lmnts.lmnarchitects.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>
