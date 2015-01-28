@@ -20,6 +20,7 @@ namespace LMNA.Lyrebird
         private List<RevitObject> familyNames = new List<RevitObject>();
         private List<string> typeNames = new List<string>();
         private List<RevitParameter> parameters = new List<RevitParameter>();
+        private List<string> elementIdCollection = new List<string>();
 
         private int modBehavior;
         private int runId;
@@ -212,7 +213,8 @@ namespace LMNA.Lyrebird
                                 List<Parameter> typeParams = new List<Parameter>();
                                 foreach (Parameter p in wt.Parameters)
                                 {
-                                    typeParams.Add(p);
+                                    if(!p.IsReadOnly)
+                                        typeParams.Add(p);
                                 }
 
                                 // Get the instance parameters
@@ -238,7 +240,8 @@ namespace LMNA.Lyrebird
                                     {
                                         foreach (Parameter p in wall.Parameters)
                                         {
-                                            instParameters.Add(p);
+                                            if (!p.IsReadOnly)
+                                                instParameters.Add(p);
                                         }
                                     }
                                     t.RollBack();
@@ -284,7 +287,8 @@ namespace LMNA.Lyrebird
                                 List<Parameter> typeParams = new List<Parameter>();
                                 foreach (Parameter p in ft.Parameters)
                                 {
-                                    typeParams.Add(p);
+                                    if (!p.IsReadOnly)
+                                        typeParams.Add(p);
                                 }
 
                                 // Get the instance parameters
@@ -315,7 +319,10 @@ namespace LMNA.Lyrebird
                                     if (floor != null)
                                     {
                                         foreach (Parameter p in floor.Parameters)
-                                            instParameters.Add(p);
+                                        {
+                                            if (!p.IsReadOnly)
+                                                instParameters.Add(p);
+                                        }
                                     }
                                     t.RollBack();
                                 }
@@ -361,7 +368,8 @@ namespace LMNA.Lyrebird
                                 List<Parameter> typeParams = new List<Parameter>();
                                 foreach (Parameter p in rt.Parameters)
                                 {
-                                    typeParams.Add(p);
+                                    if (!p.IsReadOnly)
+                                        typeParams.Add(p);
                                 }
 
                                 // Get the instance parameters
@@ -395,7 +403,8 @@ namespace LMNA.Lyrebird
                                     {
                                         foreach (Parameter p in roof.Parameters)
                                         {
-                                            instParameters.Add(p);
+                                            if (!p.IsReadOnly)
+                                                instParameters.Add(p);
                                         }
                                     }
                                     t.RollBack();
@@ -445,7 +454,8 @@ namespace LMNA.Lyrebird
                                         List<Parameter> typeParams = new List<Parameter>();
                                         foreach (Parameter p in fs.Parameters)
                                         {
-                                            typeParams.Add(p);
+                                            if (!p.IsReadOnly)
+                                                typeParams.Add(p);
                                         }
                                         List<Parameter> instanceParams = new List<Parameter>();
                                         // temporary create an instance of the family to get instance parameters
@@ -716,7 +726,10 @@ namespace LMNA.Lyrebird
                                             {
                                               foreach (Parameter p in fi.Parameters)
                                               {
-                                                instanceParams.Add(p);
+                                                  if (!p.IsReadOnly)
+                                                  {
+                                                      instanceParams.Add(p);
+                                                  }
                                               }
                                             }
                                             
@@ -757,6 +770,109 @@ namespace LMNA.Lyrebird
             }
             return parameters;
         }
+
+        public List<string> GetCategoryElements(ElementIdCategory eic)
+        {
+            elementIdCollection = new List<string>();
+            elementIdCollection.Add("NULL");
+            lock (_locker)
+            {
+                try
+                {
+                    UIApplication uiApp = RevitServerApp.UIApp;
+                    var doc = uiApp.ActiveUIDocument.Document;
+                    elementIdCollection = new List<string>();
+
+                    if (eic == ElementIdCategory.DesignOption)
+                    {
+                        FilteredElementCollector collector = new FilteredElementCollector(doc);
+                        collector.OfCategory(BuiltInCategory.OST_DesignOptions);
+
+                        foreach (Element elem in collector)
+                        {
+                            try
+                            {
+                                DesignOption desOpt = elem as DesignOption;
+                                elementIdCollection.Add(desOpt.Name + "," + desOpt.Id.IntegerValue.ToString());
+                            }
+                            catch { }
+                        }
+                        elementIdCollection.Sort();
+                    }
+
+                    else if (eic == ElementIdCategory.Image)
+                    {
+                        elementIdCollection.Add("Images are not supported in Revit 2014");
+                    }
+
+                    else if (eic == ElementIdCategory.Level)
+                    {
+                        FilteredElementCollector collector = new FilteredElementCollector(doc);
+                        collector.OfCategory(BuiltInCategory.OST_Levels);
+                        List<Level> levels = new List<Level>();
+                        foreach (Element elem in collector)
+                        {
+                            try
+                            {
+                                Level lvl = elem as Level;
+                                double elev = lvl.Elevation;
+                                levels.Add(lvl);
+                            }
+                            catch { }
+                        }
+
+                        // Sort the levels by elevation
+                        levels.Sort((lvl1, lvl2) => lvl1.Elevation.CompareTo(lvl2.Elevation));
+                        
+                        foreach (Level lvl in levels)
+                        {
+                            try
+                            {
+                                elementIdCollection.Add(lvl.Name + "," + lvl.Id.IntegerValue.ToString());
+                            }
+                            catch { }
+                        }
+                    }
+
+                    else if (eic == ElementIdCategory.Material)
+                    {
+                        FilteredElementCollector collector = new FilteredElementCollector(doc);
+                        collector.OfCategory(BuiltInCategory.OST_Materials);
+
+                        foreach (Element elem in collector)
+                        {
+                            try
+                            {
+                                Material mat = elem as Material;
+                                elementIdCollection.Add(mat.Name + "," + mat.Id.IntegerValue.ToString());
+                            }
+                            catch { }
+                        }
+                        elementIdCollection.Sort();
+                    }
+
+                    else if (eic == ElementIdCategory.Phase)
+                    {
+                        FilteredElementCollector collector = new FilteredElementCollector(doc);
+                        collector.OfCategory(BuiltInCategory.OST_Phases);
+
+                        foreach (Element elem in collector)
+                        {
+                            try
+                            {
+                                Phase phase = elem as Phase;
+                                elementIdCollection.Add(phase.Name + "," + phase.Id.IntegerValue.ToString());
+                            }
+                            catch { }
+                        }
+                        elementIdCollection.Sort();
+                    }
+                }
+                catch { }
+            }
+            return elementIdCollection;
+        }
+                        
 
         public bool CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId, string nickName)
         {
@@ -3905,10 +4021,31 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            p.Set(p.Definition.ParameterType == ParameterType.Material
-                                ? GetMaterial(rp.Value, doc)
-                                : new ElementId(Convert.ToInt32(rp.Value)));
-                        break;
+                            try
+                            {
+                                int idInt = Convert.ToInt32(rp.Value);
+                                ElementId elemId = new ElementId(idInt);
+                                Element elem = doc.GetElement(elemId);
+                                if (elem != null)
+                                {
+                                    //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                    p.Set(elemId);
+                                }
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    p.Set(p.Definition.ParameterType == ParameterType.Material
+                                        ? GetMaterial(rp.Value, doc)
+                                        : new ElementId(Convert.ToInt32(rp.Value)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                }
+                            }
+                            break;
                         default:
                             p.Set(rp.Value);
                             break;
@@ -3938,10 +4075,30 @@ namespace LMNA.Lyrebird
                                 p.Set(rp.Value);
                                 break;
                             case "ElementId":
-                                if (p.Definition.ParameterType == ParameterType.Material)
-                                    p.Set(GetMaterial(rp.Value, doc));
-                                else
-                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                try
+                                {
+                                    int idInt = Convert.ToInt32(rp.Value);
+                                    ElementId elemId = new ElementId(idInt);
+                                    Element elem = doc.GetElement(elemId);
+                                    if (elem != null)
+                                    {
+                                        //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                        p.Set(elemId);
+                                    }
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        p.Set(p.Definition.ParameterType == ParameterType.Material
+                                            ? GetMaterial(rp.Value, doc)
+                                            : new ElementId(Convert.ToInt32(rp.Value)));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                    }
+                                }
                                 break;
                             default:
                                 p.Set(rp.Value);
@@ -3982,10 +4139,30 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            if (p.Definition.ParameterType == ParameterType.Material)
-                                p.Set(GetMaterial(rp.Value, doc));
-                            else
-                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            try
+                            {
+                                int idInt = Convert.ToInt32(rp.Value);
+                                ElementId elemId = new ElementId(idInt);
+                                Element elem = doc.GetElement(elemId);
+                                if (elem != null)
+                                {
+                                    //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                    p.Set(elemId);
+                                }
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    p.Set(p.Definition.ParameterType == ParameterType.Material
+                                        ? GetMaterial(rp.Value, doc)
+                                        : new ElementId(Convert.ToInt32(rp.Value)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                }
+                            }
                             break;
                         default:
                             p.Set(rp.Value);
@@ -4016,11 +4193,31 @@ namespace LMNA.Lyrebird
                                 p.Set(rp.Value);
                                 break;
                             case "ElementId":
-                                if (p.Definition.ParameterType == ParameterType.Material)
-                                    p.Set(GetMaterial(rp.Value, doc));
-                                else
-                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
-                                break;
+                                try
+                                {
+                                    int idInt = Convert.ToInt32(rp.Value);
+                                    ElementId elemId = new ElementId(idInt);
+                                    Element elem = doc.GetElement(elemId);
+                                    if (elem != null)
+                                    {
+                                        //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                        p.Set(elemId);
+                                    }
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        p.Set(p.Definition.ParameterType == ParameterType.Material
+                                            ? GetMaterial(rp.Value, doc)
+                                            : new ElementId(Convert.ToInt32(rp.Value)));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                    }
+                                }
+                                break;              
                             default:
                                 p.Set(rp.Value);
                                 break;
@@ -4060,10 +4257,30 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            if (p.Definition.ParameterType == ParameterType.Material)
-                                p.Set(GetMaterial(rp.Value, doc));
-                            else
-                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            try
+                            {
+                                int idInt = Convert.ToInt32(rp.Value);
+                                ElementId elemId = new ElementId(idInt);
+                                Element elem = doc.GetElement(elemId);
+                                if (elem != null)
+                                {
+                                    //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                    p.Set(elemId);
+                                }
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    p.Set(p.Definition.ParameterType == ParameterType.Material
+                                        ? GetMaterial(rp.Value, doc)
+                                        : new ElementId(Convert.ToInt32(rp.Value)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                }
+                            }
                             break;
                         default:
                             p.Set(rp.Value);
@@ -4094,10 +4311,30 @@ namespace LMNA.Lyrebird
                                 p.Set(rp.Value);
                                 break;
                             case "ElementId":
-                                if (p.Definition.ParameterType == ParameterType.Material)
-                                    p.Set(GetMaterial(rp.Value, doc));
-                                else
-                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                try
+                                {
+                                    int idInt = Convert.ToInt32(rp.Value);
+                                    ElementId elemId = new ElementId(idInt);
+                                    Element elem = doc.GetElement(elemId);
+                                    if (elem != null)
+                                    {
+                                        //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                        p.Set(elemId);
+                                    }
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        p.Set(p.Definition.ParameterType == ParameterType.Material
+                                            ? GetMaterial(rp.Value, doc)
+                                            : new ElementId(Convert.ToInt32(rp.Value)));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                    }
+                                }
                                 break;
                             default:
                                 p.Set(rp.Value);
@@ -4138,10 +4375,30 @@ namespace LMNA.Lyrebird
                             p.Set(rp.Value);
                             break;
                         case "ElementId":
-                            if (p.Definition.ParameterType == ParameterType.Material)
-                                p.Set(GetMaterial(rp.Value, doc));
-                            else
-                                p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                            try
+                            {
+                                int idInt = Convert.ToInt32(rp.Value);
+                                ElementId elemId = new ElementId(idInt);
+                                Element elem = doc.GetElement(elemId);
+                                if (elem != null)
+                                {
+                                    //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                    p.Set(elemId);
+                                }
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    p.Set(p.Definition.ParameterType == ParameterType.Material
+                                        ? GetMaterial(rp.Value, doc)
+                                        : new ElementId(Convert.ToInt32(rp.Value)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                }
+                            }
                             break;
                         default:
                             p.Set(rp.Value);
@@ -4172,10 +4429,30 @@ namespace LMNA.Lyrebird
                                 p.Set(rp.Value);
                                 break;
                             case "ElementId":
-                                if (p.Definition.ParameterType == ParameterType.Material)
-                                    p.Set(GetMaterial(rp.Value, doc));
-                                else
-                                    p.Set(new ElementId(Convert.ToInt32(rp.Value)));
+                                try
+                                {
+                                    int idInt = Convert.ToInt32(rp.Value);
+                                    ElementId elemId = new ElementId(idInt);
+                                    Element elem = doc.GetElement(elemId);
+                                    if (elem != null)
+                                    {
+                                        //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                        p.Set(elemId);
+                                    }
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        p.Set(p.Definition.ParameterType == ParameterType.Material
+                                            ? GetMaterial(rp.Value, doc)
+                                            : new ElementId(Convert.ToInt32(rp.Value)));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                    }
+                                }
                                 break;
                             default:
                                 p.Set(rp.Value);

@@ -128,6 +128,25 @@ namespace LMNA.Lyrebird.LyrebirdCommon
             return null;
         }
 
+        public List<string> GetCategoryElements(ElementIdCategory eic)
+        {
+            if (IsValid())
+            {
+                try
+                {
+                    List<string> materials = _channel.GetCategoryElements(eic);
+                    
+                    return materials;
+                }
+                catch
+                {
+                    List<string> errors = new List<string> { "error" };
+                    return errors;
+                }
+            }
+            return null;
+        }
+
         //public bool CreateObjects(List<RevitObject> objects)
         //{
         //    if (IsValid())

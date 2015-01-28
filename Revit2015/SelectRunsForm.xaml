@@ -40,7 +40,7 @@
             </Style.Triggers>
         </Style>
 
-        <BitmapImage x:Key="logo" UriSource="pack://application:,,,/LMNA.Lyrebird.Revit2015;component/images/LMNts_transparency_80x17.png"/>
+        <BitmapImage x:Key="logo" UriSource="pack://application:,,,/LMNA.Lyrebird.RevitServer2015;component/images/LMNts_transparency_80x17.png"/>
 
     </Window.Resources>
     <Border Background="Transparent" MouseLeftButtonDown="Border_MouseLeftButtonDown">

@@ -75,6 +75,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="RevitCategoryElements.cs" />
     <Compile Include="SelectParameterForm.xaml.cs">
       <DependentUpon>SelectParameterForm.xaml</DependentUpon>
     </Compile>

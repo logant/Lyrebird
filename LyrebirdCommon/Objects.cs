@@ -37,6 +37,28 @@ namespace LMNA.Lyrebird.LyrebirdCommon
     }
 
     [DataContract]
+    public class ElementIdObject
+    {
+        [DataMember]
+        public string Name { get; set; }
+
+        [DataMember]
+        public int ElementId { get; set; }
+
+        public ElementIdObject()
+        {
+            Name = null;
+            ElementId = -1;
+        }
+
+        public ElementIdObject(string name, int elemId)
+        {
+            Name = name;
+            ElementId = elemId;
+        }
+    }
+
+    [DataContract]
     public class RevitObject
     {
         [DataMember]
@@ -271,5 +293,14 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         public RunCollection()
         {
         }
+    }
+
+    public enum ElementIdCategory
+    {
+        DesignOption = 0,
+        Image = 1,
+        Level = 2,
+        Material = 3,
+        Phase = 4
     }
 }

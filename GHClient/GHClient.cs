@@ -288,24 +288,59 @@ namespace LMNA.Lyrebird.GH
                                         bool getCrvs = CurveSegments(rCurves, crv, true);
                                         if (rCurves.Count > 0)
                                         {
-                                            RevitObject ro = new RevitObject();
-                                            List<LyrebirdCurve> lbCurves = new List<LyrebirdCurve>();
-                                            for (int j = 0; j < rCurves.Count; j++)
+                                            // Check if they're planar in the XY Plane
+                                            List<double> endPointElevations = new List<double>();
+                                            foreach (Curve crvSegment in rCurves)
                                             {
-                                                LyrebirdCurve lbc;
-                                                lbc = GetLBCurve(rCurves[j]);
-                                                lbCurves.Add(lbc);
+                                                if (crvSegment.PointAtStart.Z == crvSegment.PointAtEnd.Z)
+                                                {
+                                                    if (!endPointElevations.Contains(crvSegment.PointAtEnd.Z))
+                                                        endPointElevations.Add(crvSegment.PointAtEnd.Z);
+                                                }
                                             }
-                                            ro.Curves = lbCurves;
-                                            ro.FamilyName = familyName;
-                                            ro.Category = category;
-                                            ro.CategoryId = categoryId;
-                                            ro.TypeName = typeName;
-                                            ro.Origin = null;
-                                            ro.GHPath = curves.Paths[i].ToString();
-                                            ro.GHScaleFactor = scale.ScaleFactor;
-                                            ro.GHScaleName = scale.ScaleName;
-                                            tempObjs.Add(ro);
+
+                                            if (endPointElevations.Count == 1)
+                                            {
+                                                // curves are planar in the XY plane
+                                                foreach (Curve rCurveSegment in rCurves)
+                                                {
+                                                    RevitObject ro = new RevitObject();
+                                                    LyrebirdCurve lbc = GetLBCurve(rCurveSegment);
+                                                    List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve> { lbc };
+                                                    ro.Curves = lbcurves;
+                                                    ro.FamilyName = familyName;
+                                                    ro.Category = category;
+                                                    ro.CategoryId = categoryId;
+                                                    ro.TypeName = typeName;
+                                                    ro.Origin = null;
+                                                    ro.GHPath = curves.Paths[i].ToString();
+                                                    ro.GHScaleFactor = scale.ScaleFactor;
+                                                    ro.GHScaleName = scale.ScaleName;
+                                                    tempObjs.Add(ro);
+
+                                                }
+                                            }
+                                            else
+                                            {
+                                                RevitObject ro = new RevitObject();
+                                                List<LyrebirdCurve> lbCurves = new List<LyrebirdCurve>();
+                                                for (int j = 0; j < rCurves.Count; j++)
+                                                {
+                                                    LyrebirdCurve lbc;
+                                                    lbc = GetLBCurve(rCurves[j]);
+                                                    lbCurves.Add(lbc);
+                                                }
+                                                ro.Curves = lbCurves;
+                                                ro.FamilyName = familyName;
+                                                ro.Category = category;
+                                                ro.CategoryId = categoryId;
+                                                ro.TypeName = typeName;
+                                                ro.Origin = null;
+                                                ro.GHPath = curves.Paths[i].ToString();
+                                                ro.GHScaleFactor = scale.ScaleFactor;
+                                                ro.GHScaleName = scale.ScaleName;
+                                                tempObjs.Add(ro);
+                                            }
                                         }
                                     }
                                     obj = tempObjs;
@@ -326,7 +361,24 @@ namespace LMNA.Lyrebird.GH
                                             Curve[] segments = polycurve.Explode();
                                             if (segments.Count() != 1)
                                             {
-                                                break;
+                                                foreach (Curve rCurveSegment in segments)
+                                                {
+                                                    RevitObject ro = new RevitObject();
+                                                    LyrebirdCurve lbc = GetLBCurve(rCurveSegment);
+                                                    List<LyrebirdCurve> lbcurves = new List<LyrebirdCurve> { lbc };
+                                                    ro.Curves = lbcurves;
+                                                    ro.FamilyName = familyName;
+                                                    ro.Category = category;
+                                                    ro.CategoryId = categoryId;
+                                                    ro.TypeName = typeName;
+                                                    ro.Origin = null;
+                                                    ro.GHPath = curves.Paths[i].ToString();
+                                                    ro.GHScaleFactor = scale.ScaleFactor;
+                                                    ro.GHScaleName = scale.ScaleName;
+                                                    tempObjs.Add(ro);
+
+                                                }
+                                                //break;
                                             }
                                         }
                                         if (ghc != null)
@@ -542,9 +594,30 @@ namespace LMNA.Lyrebird.GH
                                         }
                                         if (data != null)
                                         {
-                                            string value = data[r][0].ToString();
-                                            rp.Value = value;
-                                            revitParams.Add(rp);
+                                            string value = null;
+                                            try
+                                            {
+                                                value = data[r][0].ToString();
+                                            }
+                                            catch (Exception)
+                                            {
+                                                if (data.DataCount > 0)
+                                                    value = data[data.Branches.Count - 1][0].ToString();
+                                            }
+                                            //System.Windows.Forms.MessageBox.Show("Got the Value");
+                                            if (value != null)
+                                            {
+                                                if (rp.StorageType == "ElementId")
+                                                {
+                                                    string[] values = value.Split(new char[] { ',' }, StringSplitOptions.None);
+                                                    rp.Value = values[values.Count() - 1];
+                                                }
+                                                else
+                                                {
+                                                    rp.Value = value;
+                                                }
+                                                revitParams.Add(rp);
+                                            }
                                         }
                                     }
 
@@ -692,6 +765,8 @@ namespace LMNA.Lyrebird.GH
                 r2016 = false;
             }
             appVersion = 1;
+            Properties.Settings.Default.RevitVersion = appVersion;
+            Properties.Settings.Default.Save();
         }
 
         private void Menu_R2015Clicked(object sender, EventArgs e)
@@ -703,6 +778,8 @@ namespace LMNA.Lyrebird.GH
                 r2016 = false;
             }
             appVersion = 2;
+            Properties.Settings.Default.RevitVersion = appVersion;
+            Properties.Settings.Default.Save();
         }
 
         private void Menu_R2016Clicked(object sender, EventArgs e)
@@ -714,6 +791,8 @@ namespace LMNA.Lyrebird.GH
                 r2015 = false;
             }
             appVersion = 3;
+            Properties.Settings.Default.RevitVersion = appVersion;
+            Properties.Settings.Default.Save();
         }
 
         private void Menu_ParamNamesClicked(object sender, EventArgs e)

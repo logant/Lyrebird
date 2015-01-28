@@ -241,6 +241,7 @@ namespace LMNA.Lyrebird
 
         public void ShowSelectionForm(List<RunCollection> rcs, UIDocument uidoc)
         {
+            
             if (selectionForm == null || !selectionForm.IsVisible)
             {
                 selectionForm = new SelectRunsForm(rcs, uidoc);

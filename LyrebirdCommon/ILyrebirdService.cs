@@ -25,5 +25,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
         [OperationContract]
         bool CreateOrModify(List<RevitObject> objects, Guid uniqueId, string nickName);
 
+        [OperationContract]
+        List<string> GetCategoryElements(ElementIdCategory eic);
     }
 }

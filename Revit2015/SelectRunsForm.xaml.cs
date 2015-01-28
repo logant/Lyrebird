@@ -40,6 +40,7 @@ namespace LMNA.Lyrebird
             uiDoc = _uiDoc;
             InitializeComponent();
             runNames = new List<string>();
+            
             for (int i = 0; i < runCollections.Count; i++)
             {
                 string value = runCollections[i].NickName + " : " + runCollections[i].ComponentGuid.ToString();
