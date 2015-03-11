@@ -55,7 +55,7 @@ namespace LMNA.Lyrebird.GH
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBooleanParameter("Trigger", "T", "Trigger the retrieval of Revit materials", GH_ParamAccess.item, false);
-            pManager.AddIntegerParameter("Category", "C", "n1 = Images\n2 = Levels\n3 = Materials\n4 = Phases", GH_ParamAccess.item, 3);
+            pManager.AddIntegerParameter("Category", "C", "1 = Images\n2 = Levels\n3 = Materials\n4 = Phases", GH_ParamAccess.item, 3);
             Grasshopper.Kernel.Parameters.Param_Integer paramInt = pManager[1] as Grasshopper.Kernel.Parameters.Param_Integer;
             if (paramInt != null)
             {
@@ -92,13 +92,13 @@ namespace LMNA.Lyrebird.GH
                 if (eic != eicTemp)
                 {
                     eic = (ElementIdCategory)category;
-                    elements.Clear();
                 }
             }
             catch { }
             
             if (runCommand)
             {
+                elements.Clear();
                 // Open the Channel to Revit
                 LyrebirdChannel channel = new LyrebirdChannel(appVersion);
                 channel.Create();
@@ -184,6 +184,38 @@ namespace LMNA.Lyrebird.GH
             appVersion = 3;
             Properties.Settings.Default.RevitVersion = appVersion;
             Properties.Settings.Default.Save();
+        }
+
+        public override bool Write(GH_IO.Serialization.GH_IWriter writer)
+        {
+            // write the information to the component.
+            for (int i = 0; i < elements.Count; i++)
+            {
+                writer.SetString("Element", i, elements[i]);
+            }
+
+            return base.Write(writer);
+        }
+
+        public override bool Read(GH_IO.Serialization.GH_IReader reader)
+        {
+            elements = new List<string>();
+            bool keepMoving = true;
+            int i = 0;
+            while (keepMoving)
+            {
+                try
+                {
+                    string value = reader.GetString("Element", i);
+                    elements.Add(value);
+                    i++;
+                }
+                catch
+                {
+                    keepMoving = false;
+                }
+            }
+            return base.Read(reader);
         }
     }
 }

@@ -29,6 +29,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
             try
             {
                 _binding = new NetNamedPipeBinding();
+                _binding.MaxReceivedMessageSize = 10485760;
                 if (productId == 0)
                 {
                     //_endpoint = new EndpointAddress("net.pipe://localhost/LMNts/LyrebirdServer/Revit2013/LyrebirdService");
@@ -43,6 +44,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                 }
                 _factory = new ChannelFactory<ILyrebirdService>(_binding, _endpoint);
                 _channel = _factory.CreateChannel();
+                
                 rc = true;
             }
             catch (Exception ex)
@@ -81,7 +83,7 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                     List<RevitObject> famNames = _channel.GetFamilyNames();
                     return famNames;
                 }
-                catch
+                catch (Exception ex)
                 {
                     List<RevitObject> errors = new List<RevitObject> {new RevitObject("Error", -1, "Error")};
                     return errors;

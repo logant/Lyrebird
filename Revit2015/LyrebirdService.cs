@@ -1089,7 +1089,7 @@ namespace LMNA.Lyrebird
 
                         // Find existing elements
                         List<ElementId> existing = FindExisting(uiApp.ActiveUIDocument.Document, uniqueId, incomingObjs[0].CategoryId, -1);
-
+                        
                         // find if there's more than one run existing
                         Schema instanceSchema = Schema.Lookup(instanceSchemaGUID);
                         List<int> runIds = new List<int>();
@@ -1123,6 +1123,16 @@ namespace LMNA.Lyrebird
                                         {
                                             RoofBase r = e as RoofBase;
                                             familyName = r.Category.Name + " : " + r.RoofType.Name;
+                                        }
+                                        else if (e.Category.Id.IntegerValue == -2000240)
+                                        {
+                                            Level lvl = e as Level;
+                                            familyName = lvl.Category.Name + " : " + lvl.LevelType.Name;
+                                        }
+                                        else if (e.Category.Id.IntegerValue == -2000220)
+                                        {
+                                            Grid g = e as Grid;
+                                            familyName = g.Category.Name + " : " + g.GridType.Name;
                                         }
                                         else
                                         {
@@ -1319,13 +1329,23 @@ namespace LMNA.Lyrebird
             {
                 // Find the FamilySymbol
                 FamilySymbol symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
+                
+                LevelType lt = FindLevelType(ro.TypeName, doc);
 
-                if (symbol != null)
+                if (symbol != null || lt != null)
                 {
                     // Get the hosting ID from the family.
-                    Family fam = symbol.Family;
-                    Parameter hostParam = fam.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
-                    int hostBehavior = hostParam.AsInteger();
+                    Family fam = null;
+                    Parameter hostParam = null;
+                    int hostBehavior = 0;
+
+                    try
+                    {
+                        fam = symbol.Family;
+                        hostParam = fam.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
+                        hostBehavior = hostParam.AsInteger();
+                    }
+                    catch{}
                     
                     using (Transaction t = new Transaction(doc, "Lyrebird Create Objects"))
                     {
@@ -1364,7 +1384,26 @@ namespace LMNA.Lyrebird
                             }
                             FamilyInstance fi = null;
                             XYZ origin = XYZ.Zero;
-                            if (hostBehavior == 0)
+                            if (lt != null)
+                            {
+                                // Create a level for the object.
+                                foreach (RevitObject obj in revitObjects)
+                                {
+                                    try
+                                    {
+                                        Level lvl = doc.Create.NewLevel(UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT));
+                                        lvl.LevelType = lt;
+                                        
+                                        // Set the parameters.
+                                        SetParameters(lvl, obj.Parameters, doc);
+
+                                        // Assign the GH InstanceGuid
+                                        AssignGuid(lvl, uniqueId, instanceSchema, runId, nickName);
+                                    }
+                                    catch { }
+                                }
+                            }
+                            else if (hostBehavior == 0)
                             {
                                 int x = 0;
                                 foreach (RevitObject obj in revitObjects)
@@ -1611,6 +1650,7 @@ namespace LMNA.Lyrebird
                 WallType wallType = null;
                 FloorType floorType = null;
                 RoofType roofType = null;
+                GridType gridType = null;
                 bool typeFound = false;
 
                 FilteredElementCollector famCollector = new FilteredElementCollector(doc);
@@ -1649,6 +1689,19 @@ namespace LMNA.Lyrebird
                         if (rt.Name == ro.TypeName)
                         {
                             roofType = rt;
+                            typeFound = true;
+                            break;
+                        }
+                    }
+                }
+                else if (ro.CategoryId == -2000220)
+                {
+                    famCollector.OfClass(typeof(GridType));
+                    foreach (GridType gt in famCollector)
+                    {
+                        if (gt.Name == ro.TypeName)
+                        {
+                            gridType = gt;
                             typeFound = true;
                             break;
                         }
@@ -1801,6 +1854,44 @@ namespace LMNA.Lyrebird
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(fi, uniqueId, instanceSchema, runId, nickName);
+                                            }
+                                        }
+                                        else if (obj.CategoryId == -2000220)
+                                        {
+                                            // draw a grid
+                                            Grid g = null;
+                                            if (lbc.CurveType == "Line")
+                                            {
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                Line line = Line.CreateBound(pt1, pt2);
+                                                try
+                                                {
+                                                    g = doc.Create.NewGrid(line);
+                                                }
+                                                catch { }
+                                            }
+                                            else if (lbc.CurveType == "Arc")
+                                            {
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
+                                                Arc arc = Arc.Create(pt1, pt3, pt2);
+                                                try
+                                                {
+                                                    g = doc.Create.NewGrid(arc);
+                                                }
+                                                catch { }
+                                            }
+
+                                            if (g != null)
+                                            {
+                                                g.ExtendToAllLevels(); ;
+                                                // Assign the parameters
+                                                SetParameters(g, obj.Parameters, doc);
+
+                                                // Assign the GH InstanceGuid
+                                                AssignGuid(g, uniqueId, instanceSchema, 0, nickName);
                                             }
                                         }
 
@@ -2140,12 +2231,24 @@ namespace LMNA.Lyrebird
                 // Find the FamilySymbol
                 FamilySymbol symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
 
-                if (symbol != null)
+                LevelType lt = FindLevelType(ro.TypeName, doc);
+
+                GridType gt = FindGridType(ro.TypeName, doc);
+
+                if (symbol != null || lt != null)
                 {
                     // Get the hosting ID from the family.
-                    Family fam = symbol.Family;
-                    Parameter hostParam = fam.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
-                    int hostBehavior = hostParam.AsInteger();
+                    Family fam = null;
+                    Parameter hostParam = null;
+                    int hostBehavior = 0;
+
+                    try
+                    {
+                        fam = symbol.Family;
+                        hostParam = fam.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
+                        hostBehavior = hostParam.AsInteger();
+                    }
+                    catch{}
 
                     //FamilyInstance existingInstance = doc.GetElement(existingElems[0]) as FamilyInstance;
                     
@@ -2186,9 +2289,26 @@ namespace LMNA.Lyrebird
 
                             FamilyInstance fi = null;
                             XYZ origin = XYZ.Zero;
-                            if (hostBehavior == 0)
+
+                            if (lt != null)
                             {
-                                
+                                for (int i = 0; i < existingObjects.Count; i++)
+                                {
+                                    RevitObject obj = existingObjects[i];
+                                    Level lvl = doc.GetElement(existingElems[i]) as Level;
+
+                                    if (lvl.ProjectElevation != (UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT)))
+                                    {
+                                        double offset = lvl.Elevation - lvl.ProjectElevation;
+                                        lvl.Elevation = (UnitUtils.ConvertToInternalUnits(obj.Origin.Z + offset, lengthDUT));
+                                    }
+
+                                    SetParameters(lvl, obj.Parameters, doc);
+                                }
+                            }
+                            else if (hostBehavior == 0)
+                            {
+
                                 for (int i = 0; i < existingObjects.Count; i++)
                                 {
                                     RevitObject obj = existingObjects[i];
@@ -2279,7 +2399,7 @@ namespace LMNA.Lyrebird
                                             ElementTransformUtils.RotateElement(doc, fi.Id, axis, angle);
                                         }
                                     }
-                                    
+
                                     SetParameters(fi, obj.Parameters, doc);
                                 }
                             }
@@ -2604,6 +2724,7 @@ namespace LMNA.Lyrebird
                 WallType wallType = null;
                 FloorType floorType = null;
                 RoofType roofType = null;
+                GridType gridType = null;
                 bool typeFound = false;
 
                 FilteredElementCollector famCollector = new FilteredElementCollector(doc);
@@ -2647,6 +2768,19 @@ namespace LMNA.Lyrebird
                         }
                     }
                 }
+                else if (ro.CategoryId == -2000220)
+                {
+                    famCollector.OfClass(typeof(GridType));
+                    foreach (GridType gt in famCollector)
+                    {
+                        if (gt.Name == ro.TypeName)
+                        {
+                            gridType = gt;
+                            typeFound = true;
+                            break;
+                        }
+                    }
+                }
                 else
                 {
                     symbol = FindFamilySymbol(ro.FamilyName, ro.TypeName, doc);
@@ -2658,6 +2792,7 @@ namespace LMNA.Lyrebird
 
                 if (typeFound)
                 {
+                    
                     using (Transaction t = new Transaction(doc, "Lyrebird Modify Objects"))
                     {
                         t.Start();
@@ -2694,6 +2829,8 @@ namespace LMNA.Lyrebird
                                 instanceSchema = sb.Finish();
                             }
                             FamilyInstance fi = null;
+                            Grid grid = null;
+                            
                             try
                             {
                                 bool supress = Properties.Settings.Default.suppressWarning;
@@ -2702,7 +2839,7 @@ namespace LMNA.Lyrebird
                                 for (int i = 0; i < existingObjects.Count; i++)
                                 {
                                     RevitObject obj = existingObjects[i];
-                                    if (obj.CategoryId != -2000011 && obj.CategoryId != -2000032 && obj.CategoryId != -2000035)
+                                    if (obj.CategoryId != -2000011 && obj.CategoryId != -2000032 && obj.CategoryId != -2000035 && obj.CategoryId != -2000220)
                                     {
                                         fi = doc.GetElement(existingElems[i]) as FamilyInstance;
 
@@ -2715,6 +2852,89 @@ namespace LMNA.Lyrebird
                                             }
                                             catch (Exception ex)
                                             {
+                                                Debug.WriteLine(ex.Message);
+                                            }
+                                        }
+                                    }
+                                    else if (obj.CategoryId == -2000220)
+                                    {
+                                        grid = doc.GetElement(existingElems[i]) as Grid;
+
+                                        // Get the grid location and compare against the incoming curve
+                                        Curve gridCrv = grid.Curve;
+                                        LyrebirdCurve lbc = obj.Curves[0];
+                                        try
+                                        {
+                                            Arc arc = gridCrv as Arc;
+                                            if (arc != null && lbc.CurveType == "Arc")
+                                            {
+                                                // Test that the arcs are similar
+                                                XYZ startPoint = arc.GetEndPoint(0);
+                                                XYZ endPoint = arc.GetEndPoint(1);
+                                                XYZ centerPoint = arc.Center;
+                                                double rad = arc.Radius;
+
+                                                XYZ lbcStartPt = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                XYZ lbcEndPt = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+                                                XYZ lbcMidPt = new XYZ(lbc.ControlPoints[2].X, lbc.ControlPoints[2].Y, lbc.ControlPoints[2].Z);
+                                                Arc lbcArc = Arc.Create(lbcStartPt, lbcEndPt, lbcMidPt);
+                                                XYZ lbcCenterPt = lbcArc.Center;
+                                                double lbcRad = lbcArc.Radius;
+
+                                                if (centerPoint.DistanceTo(lbcCenterPt) < 0.001 && lbcRad == rad && startPoint.DistanceTo(lbcStartPt) < 0.001)
+                                                {
+                                                    // Do not create
+                                                }
+                                                else
+                                                {
+                                                    // Delete the grid and rebuild it with the new curve.
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // Probably need to rebuild the curve
+                                            }
+                                        }
+                                        catch { }
+
+
+                                        try
+                                        {
+                                            Line line = gridCrv as Line;
+                                            if (line != null && lbc.CurveType == "Line")
+                                            {
+                                                // Test that the arcs are similar
+                                                XYZ startPoint = line.GetEndPoint(0);
+                                                XYZ endPoint = line.GetEndPoint(1);
+
+                                                XYZ lbcStartPt = new XYZ(lbc.ControlPoints[0].X, lbc.ControlPoints[0].Y, lbc.ControlPoints[0].Z);
+                                                XYZ lbcEndPt = new XYZ(lbc.ControlPoints[1].X, lbc.ControlPoints[1].Y, lbc.ControlPoints[1].Z);
+
+                                                if (endPoint.DistanceTo(lbcEndPt) < 0.001 && startPoint.DistanceTo(lbcStartPt) < 0.001)
+                                                {
+                                                    // Do not create
+                                                }
+                                                else
+                                                {
+                                                    // Delete the grid and rebuild it with the new curve.
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // Probably need to rebuild the curve
+                                            }
+                                        }
+                                        catch { }
+
+                                        if (grid.GridType.Name != gridType.Name)
+                                        {
+                                            try
+                                            {
+                                                grid.GridType = gridType;
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                TaskDialog.Show("Error", ex.Message);
                                                 Debug.WriteLine(ex.Message);
                                             }
                                         }
@@ -2835,6 +3055,33 @@ namespace LMNA.Lyrebird
 
                                                 // Assign the parameters
                                                 SetParameters(fi, obj.Parameters, doc);
+                                            }
+                                        }
+
+                                        else if (obj.CategoryId == -2000220)
+                                        {
+                                            // draw a grid
+                                            Curve crv = null;
+                                            if (lbc.CurveType == "Line")
+                                            {
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                crv = Line.CreateBound(pt1, pt2);
+                                            }
+                                            else if (lbc.CurveType == "Arc")
+                                            {
+                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
+                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
+                                                XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
+                                                crv = Arc.Create(pt1, pt3, pt2);
+                                            }
+
+                                            if (crv != null && grid != null)
+                                            {
+                                                // Determine if it's possible to edit the grid curve or if it needs to be deleted/replaced.
+
+                                                // Assign the parameters
+                                                SetParameters(grid, obj.Parameters, doc);
                                             }
                                         }
 
@@ -3736,6 +3983,84 @@ namespace LMNA.Lyrebird
                     }
                 }
             }
+            else if (categoryId == -2000240)
+            {
+                FilteredElementCollector collector = new FilteredElementCollector(doc);
+                collector.OfCategory(BuiltInCategory.OST_Levels);
+                collector.OfClass(typeof(Level));
+
+                foreach (Level l in collector)
+                {
+                    try
+                    {
+                        Entity entity = l.GetEntity(instanceSchema);
+                        if (entity.IsValid())
+                        {
+                            Field f = instanceSchema.GetField("InstanceID");
+                            string tempId = entity.Get<string>(f);
+                            if (tempId == uniqueId.ToString())
+                            {
+                                if (runId == -1)
+                                {
+                                    existingElems.Add(l.Id);
+                                }
+                                else
+                                {
+                                    f = instanceSchema.GetField("RunID");
+                                    int id = entity.Get<int>(f);
+                                    if (id == runId)
+                                    {
+                                        existingElems.Add(l.Id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
+                }
+            }
+            else if (categoryId == -2000220)
+            {
+                FilteredElementCollector collector = new FilteredElementCollector(doc);
+                collector.OfCategory(BuiltInCategory.OST_Grids);
+                collector.OfClass(typeof(Grid));
+
+                foreach (Grid g in collector)
+                {
+                    try
+                    {
+                        Entity entity = g.GetEntity(instanceSchema);
+                        if (entity.IsValid())
+                        {
+                            Field f = instanceSchema.GetField("InstanceID");
+                            string tempId = entity.Get<string>(f);
+                            if (tempId == uniqueId.ToString())
+                            {
+                                if (runId == -1)
+                                {
+                                    existingElems.Add(g.Id);
+                                }
+                                else
+                                {
+                                    f = instanceSchema.GetField("RunID");
+                                    int id = entity.Get<int>(f);
+                                    if (id == runId)
+                                    {
+                                        existingElems.Add(g.Id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
+                }
+            }
             else
             {
                 FilteredElementCollector collector = new FilteredElementCollector(doc);
@@ -3815,6 +4140,32 @@ namespace LMNA.Lyrebird
             return null;
         }
 
+        private LevelType FindLevelType(string typeName, Document doc)
+        {
+            FilteredElementCollector ltCollector = new FilteredElementCollector(doc);
+            ltCollector.OfClass(typeof(LevelType));
+
+            foreach (LevelType lt in ltCollector)
+            {
+                if (lt.Name == typeName)
+                    return lt;
+            }
+            return null;
+        }
+
+        private GridType FindGridType(string typeName, Document doc)
+        {
+            FilteredElementCollector gtCollector = new FilteredElementCollector(doc);
+            gtCollector.OfClass(typeof(GridType));
+
+            foreach (GridType gt in gtCollector)
+            {
+                if (gt.Name == typeName)
+                    return gt;
+            }
+            return null;
+        }
+
         private CurveArray GetCurveArray(IEnumerable<LyrebirdCurve> curves)
         {
             CurveArray crvArray = new CurveArray();
@@ -3861,18 +4212,6 @@ namespace LMNA.Lyrebird
                     }
                     try
                     {
-                        // TODO: if Autodesk resovles the problem with 5 degree curves, switch back to this:
-                        //if (lbc.Degree < 3)
-                        //{
-                        //    HermiteSpline spline = HermiteSpline.Create(controlPoints, false);
-                        //    crvArray.Append(spline);
-                        //}
-                        //else
-                        //{
-                        //    NurbSpline spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
-                        //    crvArray.Append(spline);
-                        //}
-
                         if (lbc.Degree == 3)
                         {
                             NurbSpline spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
@@ -3886,31 +4225,6 @@ namespace LMNA.Lyrebird
                     }
                     catch (Exception ex)
                     {
-                        //try
-                        //{
-                        //    NurbSpline spline = NurbSpline.Create(controlPoints, weights);
-                        //    crvArray.Append(spline);
-                        //}
-                        //catch { }
-                        //System.Text.StringBuilder firstKnots = new System.Text.StringBuilder();
-                        //System.Text.StringBuilder lastKnots = new System.Text.StringBuilder();
-                        //System.Text.StringBuilder allKnots = new System.Text.StringBuilder();
-                        //int knotCt = 0;
-                        //foreach (double d in knots)
-                        //{
-                        //    allKnots.AppendLine(knotCt.ToString() + ")\t" + d.ToString());
-                        //    knotCt++;
-                        //}
-                        //int y = knots.Count - 1;
-                        //for (int x = 0; x < (lbc.Degree + 1); x++)
-                        //{
-                        //    firstKnots.AppendLine(knots[x].ToString());
-                        //    lastKnots.AppendLine(knots[y - x].ToString());
-                        //}
-                        //TaskDialog.Show("Error" + i.ToString(), ex.Message);
-
-                        //TaskDialog.Show("Errord", "Degree: " + lbc.Degree.ToString() + "\nControl Pt Qty: " + controlPoints.Count.ToString() + "\nWeights Qty: " + weights.Count.ToString() + "\n" + allKnots.ToString());
-
                         Debug.WriteLine("Error", ex.Message);
                     }
                 }
@@ -4736,6 +5050,242 @@ namespace LMNA.Lyrebird
             return eid ?? (eid = Material.Create(doc, value));
         }
 
+        private void SetParameters(Level lvl, IEnumerable<RevitParameter> parameters, Document doc)
+        {
+            foreach (RevitParameter rp in parameters)
+            {
+                try
+                {
+                    Parameter p = lvl.LookupParameter(rp.ParameterName);
+                    switch (rp.StorageType)
+                    {
+                        case "Double":
+                            if (p.Definition.ParameterType == ParameterType.Area)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Volume)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Length)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                            else
+                                p.Set(Convert.ToDouble(rp.Value));
+                            break;
+                        case "Integer":
+                            p.Set(Convert.ToInt32(rp.Value));
+                            break;
+                        case "String":
+                            p.Set(rp.Value);
+                            break;
+                        case "ElementId":
+                            try
+                            {
+                                int idInt = Convert.ToInt32(rp.Value);
+                                ElementId elemId = new ElementId(idInt);
+                                Element elem = doc.GetElement(elemId);
+                                if (elem != null)
+                                {
+                                    //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                    p.Set(elemId);
+                                }
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    p.Set(p.Definition.ParameterType == ParameterType.Material
+                                        ? GetMaterial(rp.Value, doc)
+                                        : new ElementId(Convert.ToInt32(rp.Value)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                }
+                            }
+                            break;
+                        default:
+                            p.Set(rp.Value);
+                            break;
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        Parameter p = lvl.LevelType.LookupParameter(rp.ParameterName);
+                        switch (rp.StorageType)
+                        {
+                            case "Double":
+                                if (p.Definition.ParameterType == ParameterType.Area)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Volume)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Length)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                                else
+                                    p.Set(Convert.ToDouble(rp.Value));
+                                break;
+                            case "Integer":
+                                p.Set(Convert.ToInt32(rp.Value));
+                                break;
+                            case "String":
+                                p.Set(rp.Value);
+                                break;
+                            case "ElementId":
+                                try
+                                {
+                                    int idInt = Convert.ToInt32(rp.Value);
+                                    ElementId elemId = new ElementId(idInt);
+                                    Element elem = doc.GetElement(elemId);
+                                    if (elem != null)
+                                    {
+                                        //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                        p.Set(elemId);
+                                    }
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        p.Set(p.Definition.ParameterType == ParameterType.Material
+                                            ? GetMaterial(rp.Value, doc)
+                                            : new ElementId(Convert.ToInt32(rp.Value)));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                    }
+                                }
+                                break;
+                            default:
+                                p.Set(rp.Value);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.Message);
+                    }
+                }
+            }
+        }
+
+        private void SetParameters(Grid grid, IEnumerable<RevitParameter> parameters, Document doc)
+        {
+            foreach (RevitParameter rp in parameters)
+            {
+                try
+                {
+                    Parameter p = grid.LookupParameter(rp.ParameterName);
+                    switch (rp.StorageType)
+                    {
+                        case "Double":
+                            if (p.Definition.ParameterType == ParameterType.Area)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Volume)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                            else if (p.Definition.ParameterType == ParameterType.Length)
+                                p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                            else
+                                p.Set(Convert.ToDouble(rp.Value));
+                            break;
+                        case "Integer":
+                            p.Set(Convert.ToInt32(rp.Value));
+                            break;
+                        case "String":
+                            p.Set(rp.Value);
+                            break;
+                        case "ElementId":
+                            try
+                            {
+                                int idInt = Convert.ToInt32(rp.Value);
+                                ElementId elemId = new ElementId(idInt);
+                                Element elem = doc.GetElement(elemId);
+                                if (elem != null)
+                                {
+                                    //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                    p.Set(elemId);
+                                }
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    p.Set(p.Definition.ParameterType == ParameterType.Material
+                                        ? GetMaterial(rp.Value, doc)
+                                        : new ElementId(Convert.ToInt32(rp.Value)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                }
+                            }
+                            break;
+                        default:
+                            p.Set(rp.Value);
+                            break;
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        Parameter p = grid.GridType.LookupParameter(rp.ParameterName);
+                        switch (rp.StorageType)
+                        {
+                            case "Double":
+                                if (p.Definition.ParameterType == ParameterType.Area)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), areaDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Volume)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), volumeDUT));
+                                else if (p.Definition.ParameterType == ParameterType.Length)
+                                    p.Set(UnitUtils.ConvertToInternalUnits(Convert.ToDouble(rp.Value), lengthDUT));
+                                else
+                                    p.Set(Convert.ToDouble(rp.Value));
+                                break;
+                            case "Integer":
+                                p.Set(Convert.ToInt32(rp.Value));
+                                break;
+                            case "String":
+                                p.Set(rp.Value);
+                                break;
+                            case "ElementId":
+                                try
+                                {
+                                    int idInt = Convert.ToInt32(rp.Value);
+                                    ElementId elemId = new ElementId(idInt);
+                                    Element elem = doc.GetElement(elemId);
+                                    if (elem != null)
+                                    {
+                                        //TaskDialog.Show("Test:", "Param: " + p.Definition.Name + "\nID: " + elemId.IntegerValue.ToString());
+                                        p.Set(elemId);
+                                    }
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        p.Set(p.Definition.ParameterType == ParameterType.Material
+                                            ? GetMaterial(rp.Value, doc)
+                                            : new ElementId(Convert.ToInt32(rp.Value)));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //TaskDialog.Show(p.Definition.Name, ex.Message);
+                                    }
+                                }
+                                break;
+                            default:
+                                p.Set(rp.Value);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.Message);
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region Assign the GUID
@@ -4858,6 +5408,68 @@ namespace LMNA.Lyrebird
                 field = instanceSchema.GetField("NickName");
                 entity.Set<string>(field, nickName);
                 roof.SetEntity(entity);
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Error", ex.Message);
+            }
+        }
+
+        private void AssignGuid(Level lvl, Guid guid, Schema instanceSchema, int run, string nickName)
+        {
+            Entity entity = null;
+            try
+            {
+                entity = lvl.GetEntity(instanceSchema);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Error", ex.Message);
+            }
+            try
+            {
+                if (!entity.IsValid())
+                {
+                    entity = new Entity(instanceSchema);
+                }
+                Field field = instanceSchema.GetField("InstanceID");
+                entity.Set<string>(field, guid.ToString());
+                field = instanceSchema.GetField("RunID");
+                entity.Set<int>(field, run);
+                field = instanceSchema.GetField("NickName");
+                entity.Set<string>(field, nickName);
+                lvl.SetEntity(entity);
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Error", ex.Message);
+            }
+        }
+
+        private void AssignGuid(Grid grid, Guid guid, Schema instanceSchema, int run, string nickName)
+        {
+            Entity entity = null;
+            try
+            {
+                entity = grid.GetEntity(instanceSchema);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Error", ex.Message);
+            }
+            try
+            {
+                if (!entity.IsValid())
+                {
+                    entity = new Entity(instanceSchema);
+                }
+                Field field = instanceSchema.GetField("InstanceID");
+                entity.Set<string>(field, guid.ToString());
+                field = instanceSchema.GetField("RunID");
+                entity.Set<int>(field, run);
+                field = instanceSchema.GetField("NickName");
+                entity.Set<string>(field, nickName);
+                grid.SetEntity(entity);
             }
             catch (Exception ex)
             {
