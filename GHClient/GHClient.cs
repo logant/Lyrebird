@@ -114,7 +114,7 @@ namespace LMNA.Lyrebird.GH
         }
 
         public GHClient()
-            : base("Lyrebird Out", "LBOut", "Send data from GH to another application", "LMNts", "Utilities")
+            : base("Lyrebird Out", "LBOut", "Send data from GH to another application", Properties.Settings.Default.TabName, Properties.Settings.Default.PanelName)
         {
             if (appVersion == 1)
             {
@@ -733,6 +733,7 @@ namespace LMNA.Lyrebird.GH
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
+                    System.Windows.Forms.MessageBox.Show("Error\n" + ex.Message);
                     //System.Windows.Forms.MessageBox.Show("The Lyrebird Service could not be found.  Ensure Revit is running, the Lyrebird server plugin is installed, and the server is active.");
                 }
 
@@ -748,12 +749,18 @@ namespace LMNA.Lyrebird.GH
         protected override void AppendAdditionalComponentMenuItems(System.Windows.Forms.ToolStripDropDown iMenu)
         {
             Menu_AppendItem(iMenu, "Full Parameter Names", Menu_ParamNamesClicked, true, paramNamesEnabled);
-            
+            Menu_AppendItem(iMenu, "UI Integration", Menu_UIClicked);
             // Application options.  Only 2014 will work for now.  Consider removing 2015 and/or adding support for 2013
             System.Windows.Forms.ToolStripMenuItem appItem = Menu_AppendItem(iMenu, "Application");
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2014", Menu_R2014Clicked, true, r2014));
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2015", Menu_R2015Clicked, true, r2015));
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2016", Menu_R2016Clicked, true, r2016));
+        }
+
+        private void Menu_UIClicked(object sender, EventArgs e)
+        {
+            UISettingsForm form = new UISettingsForm();
+            form.ShowDialog();
         }
 
         private void Menu_R2014Clicked(object sender, EventArgs e)

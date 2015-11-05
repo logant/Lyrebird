@@ -49,7 +49,7 @@ namespace LMNA.Lyrebird
 
         private const int WAIT_TIMEOUT = 1000;
 
-        List<RevitObject> ILyrebirdService.GetFamilyNames()
+        public List<RevitObject> GetFamilyNames()
         {
             familyNames.Add(new RevitObject("NULL", -1, "NULL"));
             lock (_locker)
@@ -58,7 +58,7 @@ namespace LMNA.Lyrebird
                 {
                     UIApplication uiApp = RevitServerApp.UIApp;
                     familyNames = new List<RevitObject>();
-                    
+
                     // Get all standard wall families
                     FilteredElementCollector familyCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     familyCollector.OfClass(typeof(Family));
@@ -68,7 +68,7 @@ namespace LMNA.Lyrebird
                         RevitObject ro = new RevitObject(f.FamilyCategory.Name, f.FamilyCategory.Id.IntegerValue, f.Name);
                         families.Add(ro);
                     }
-                    
+
                     // Add System families
                     FilteredElementCollector wallTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     wallTypeCollector.OfClass(typeof(WallType));
@@ -78,7 +78,7 @@ namespace LMNA.Lyrebird
                         RevitObject wallObj = new RevitObject(wt.Category.Name, wt.Category.Id.IntegerValue, wt.Category.Name);
                         families.Add(wallObj);
                     }
-                    
+
                     //RevitObject curtainObj = new RevitObject("Walls", "Curtain Wall");
                     //families.Add(curtainObj);
                     //RevitObject stackedObj = new RevitObject("Walls", "Stacked Wall");
@@ -92,7 +92,7 @@ namespace LMNA.Lyrebird
                         RevitObject floorObj = new RevitObject(ft.Category.Name, ft.Category.Id.IntegerValue, ft.Category.Name);
                         families.Add(floorObj);
                     }
-                    
+
                     FilteredElementCollector roofTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     roofTypeCollector.OfClass(typeof(RoofType));
                     RoofType rt = roofTypeCollector.FirstElement() as RoofType;
@@ -101,7 +101,7 @@ namespace LMNA.Lyrebird
                         RevitObject roofObj = new RevitObject(rt.Category.Name, rt.Category.Id.IntegerValue, rt.Category.Name);
                         families.Add(roofObj);
                     }
-                    
+
                     FilteredElementCollector levelTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     levelTypeCollector.OfClass(typeof(LevelType));
                     LevelType lt = levelTypeCollector.FirstElement() as LevelType;
@@ -110,7 +110,7 @@ namespace LMNA.Lyrebird
                         RevitObject levelObj = new RevitObject(lt.Category.Name, lt.Category.Id.IntegerValue, lt.Category.Name);
                         families.Add(levelObj);
                     }
-                    
+
                     FilteredElementCollector gridTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
                     gridTypeCollector.OfClass(typeof(GridType));
                     GridType gt = gridTypeCollector.FirstElement() as GridType;
@@ -119,24 +119,7 @@ namespace LMNA.Lyrebird
                         RevitObject gridObj = new RevitObject(gt.Category.Name, gt.Category.Id.IntegerValue, gt.Category.Name);
                         families.Add(gridObj);
                     }
-                    
-                    FilteredElementCollector lineTypeCollector = new FilteredElementCollector(uiApp.ActiveUIDocument.Document);
-                    lineTypeCollector.OfCategory(BuiltInCategory.OST_Lines);
-                    try
-                    {
-                        CurveElement ce = lineTypeCollector.FirstElement() as CurveElement;
-                        RevitObject modelLineObj = new RevitObject(ce.Category.Name, ce.Category.Id.IntegerValue, "Model Lines");
-                        RevitObject detailLineObj = new RevitObject(ce.Category.Name, ce.Category.Id.IntegerValue, "Detail Lines");
-                        families.Add(modelLineObj);
-                        families.Add(detailLineObj);
-                    }
-                    catch
-                    {
-                        RevitObject modelLineObj = new RevitObject("Lines", -2000051, "Model Lines");
-                        RevitObject detailLineObj = new RevitObject("Lines", -2000051, "Detail Lines");
-                        families.Add(modelLineObj);
-                        families.Add(detailLineObj);
-                    }
+
                     families.Sort((x, y) => String.CompareOrdinal(x.FamilyName.ToUpper(), y.FamilyName.ToUpper()));
                     familyNames = families;
                 }
@@ -149,7 +132,7 @@ namespace LMNA.Lyrebird
             return familyNames;
         }
 
-        List<string> ILyrebirdService.GetTypeNames(RevitObject revitFamily)
+        public List<string> GetTypeNames(RevitObject revitFamily)
         {
             typeNames.Add("NULL");
             lock (_locker)
@@ -217,31 +200,6 @@ namespace LMNA.Lyrebird
                             types.Add(gt.Name);
                         }
                     }
-                    else if (revitFamily.CategoryId == -2000051)
-                    {
-                        Categories cats = doc.Settings.Categories;
-                        Category lineCat = null;
-                        foreach (Category cat in cats)
-                        {
-                            if (cat.Id.IntegerValue == -2000051)
-                            {
-                                lineCat = cat;
-                                break;
-                            }
-                        }
-
-                        if (lineCat != null)
-                        {
-                            foreach (Category subCat in lineCat.SubCategories)
-                            {
-                                if (revitFamily.FamilyName == "Model Lines")
-                                    types.Add(subCat.Name);
-                                else if (revitFamily.FamilyName == "Detail Lines" && !subCat.Name.StartsWith("<") && !subCat.Name.EndsWith(">"))
-                                    types.Add(subCat.Name);
-
-                            }
-                        }
-                    }
                     else
                     {
                         // Get typical family types.
@@ -274,7 +232,7 @@ namespace LMNA.Lyrebird
             return typeNames;
         }
 
-        List<RevitParameter> ILyrebirdService.GetParameters(RevitObject revitFamily, string typeName)
+        public List<RevitParameter> GetParameters(RevitObject revitFamily, string typeName)
         {
             lock (_locker)
             {
@@ -663,10 +621,6 @@ namespace LMNA.Lyrebird
                             }
                         }
                     }
-                    else if (revitFamily.CategoryId == -2000051)
-                    {
-                        // leave parameters empty
-                    }
                     else
                     {
                         // Regular family.  Proceed to get all parameters
@@ -1002,7 +956,7 @@ namespace LMNA.Lyrebird
             return parameters;
         }
 
-        List<string> ILyrebirdService.GetCategoryElements(ElementIdCategory eic)
+        public List<string> GetCategoryElements(ElementIdCategory eic)
         {
             elementIdCollection = new List<string>();
             elementIdCollection.Add("NULL");
@@ -1116,7 +1070,7 @@ namespace LMNA.Lyrebird
             return elementIdCollection;
         }
 
-        bool ILyrebirdService.CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId, string nickName)
+        public bool CreateOrModify(List<RevitObject> incomingObjs, Guid uniqueId, string nickName)
         {
             lock (_locker)
             {
@@ -1340,7 +1294,7 @@ namespace LMNA.Lyrebird
             return true;
         }
 
-        string ILyrebirdService.GetDocumentName()
+        public string GetDocumentName()
         {
             lock (_locker)
             {
@@ -1938,70 +1892,6 @@ namespace LMNA.Lyrebird
 
                                                 // Assign the GH InstanceGuid
                                                 AssignGuid(g, uniqueId, instanceSchema, 0, nickName);
-                                            }
-                                        }
-                                        else if (obj.CategoryId == -2000051)
-                                        {
-                                            // Draw a line
-                                            Curve crv = null;
-                                            Curve crv2 = null;
-
-                                            if (lbc.CurveType == "Line")
-                                            {
-                                                XYZ origin = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
-                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
-                                                crv = Line.CreateBound(origin, pt2);
-                                            }
-                                            else if (lbc.CurveType == "Arc")
-                                            {
-                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
-                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
-                                                XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
-                                                crv = Arc.Create(pt1, pt3, pt2);
-                                            }
-                                            else if (lbc.CurveType == "Circle")
-                                            {
-                                                XYZ pt1 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[0].Z, lengthDUT));
-                                                XYZ pt2 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[1].Z, lengthDUT));
-                                                XYZ pt3 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[2].Z, lengthDUT));
-                                                XYZ pt4 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[3].Z, lengthDUT));
-                                                XYZ pt5 = new XYZ(UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].X, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lbc.ControlPoints[4].Z, lengthDUT));
-                                                Arc arc1 = Arc.Create(pt1, pt3, pt2);
-                                                Arc arc2 = Arc.Create(pt3, pt5, pt4);
-                                                crv = arc1;
-                                                crv2 = arc2;
-                                            }
-                                            else if (lbc.CurveType == "Spline")
-                                            {
-                                                List<XYZ> controlPoints = new List<XYZ>();
-                                                List<double> weights = lbc.Weights;
-                                                List<double> knots = lbc.Knots;
-
-
-                                                foreach (LyrebirdPoint lp in lbc.ControlPoints)
-                                                {
-                                                    XYZ pt = new XYZ(UnitUtils.ConvertToInternalUnits(lp.X, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Y, lengthDUT), UnitUtils.ConvertToInternalUnits(lp.Z, lengthDUT));
-                                                    controlPoints.Add(pt);
-                                                }
-
-                                                NurbSpline spline;
-                                                if (lbc.Degree < 3)
-                                                    spline = NurbSpline.Create(controlPoints, weights);
-                                                else
-                                                    spline = NurbSpline.Create(controlPoints, weights, knots, lbc.Degree, false, true);
-
-                                                crv = spline;
-                                            }
-
-                                            // Check for model or detail
-                                            if (obj.FamilyName == "Model Lines")
-                                            {
-                                                // We need a plane
-                                                
-                                            }
-                                            else if (obj.FamilyName == "Detail Lines")
-                                            {
-                                                // we need the active view.
                                             }
                                         }
 

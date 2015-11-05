@@ -1,0 +1,114 @@
+﻿<Window x:Class="LMNA.Lyrebird.SettingsForm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             Title="Lyrebird Settings"
+             Background="Transparent"
+             WindowStyle="None"
+             AllowsTransparency="True"
+             d:DesignHeight="200" d:DesignWidth="280" 
+             WindowStartupLocation="Manual">
+    <Window.Resources>
+        <Style x:Key="typicalButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#FF252525" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#FFE8E8E8"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="#FF606060" Offset="1.0"/>
+                                <GradientStop Color="#FF8B8B8B" Offset="0.0"/>
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="BorderBrush">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="#FF606060" Offset="1.0"/>
+                                <GradientStop Color="#FF8B8B8B" Offset="0.0"/>
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <BitmapImage x:Key="logo" UriSource="pack://application:,,,/LMNA.Lyrebird.RevitServer2015;component/images/LMNts_transparency_80x17.png"/>
+
+    </Window.Resources>
+    <Border Background="Transparent" MouseLeftButtonDown="Border_MouseLeftButtonDown">
+        <Grid Width="280" Height="200">
+            <Rectangle Fill="#FF460022" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,5,5,5">
+                <Rectangle.Effect>
+                    <BlurEffect Radius="10"/>
+                </Rectangle.Effect>
+            </Rectangle>
+            <Rectangle Fill="#FFE8E8E8" Margin="5,5,5,5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <Rectangle Fill="#FF460022" Width="78" Height="17" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12,0,0,6"/>
+            <Rectangle Fill="#FFE8E8E8" Width="80" Height="18" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="11,0,0,6" MouseLeftButtonDown="logo_MouseLeftButtonDown">
+                <Rectangle.OpacityMask>
+                    <ImageBrush ImageSource="{StaticResource logo}"/>
+                </Rectangle.OpacityMask>
+            </Rectangle>
+            <Rectangle Fill="#FF460022" Width="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="5,5,0,5"/>
+            <Rectangle Fill="#FF460022" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="5,5,5,0"/>
+            <Rectangle Fill="#FF460022" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,5,5,5"/>
+            <Rectangle Fill="#FF460022" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="5,0,5,5"/>
+
+            <Button x:Name="cancelButton" Click="cancelButton_Click"  MouseEnter="cancelButton_MouseEnter"  MouseLeave="cancelButton_MouseLeave"
+                    Style="{StaticResource typicalButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,6" Width="80" Height="30">
+                <Button.Content>
+                    <Grid Width="80" Height="30">
+                        <Rectangle x:Name="cancelRect" Fill="Transparent"/>
+                        <TextBlock Text="Cancel" TextAlignment="Center"/>
+                    </Grid>
+                </Button.Content>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter Margin="{TemplateBinding Control.Padding}"
+                                          HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                                          ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"
+                                          RecognizesAccessKey="True"
+                                          Content="{TemplateBinding ContentControl.Content}"/>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button x:Name="okButton" Click="okButton_Click"  MouseEnter="okButton_MouseEnter"  MouseLeave="okButton_MouseLeave"  IsDefault="True"
+                    Style="{StaticResource typicalButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,86,6" Width="80" Height="30">
+                <Button.Content>
+                    <Grid Width="80" Height="30">
+                        <Rectangle x:Name="okRect" Fill="Transparent"/>
+                        <TextBlock Text="OK" TextAlignment="Center"/>
+                    </Grid>
+                </Button.Content>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter Margin="{TemplateBinding Control.Padding}"
+                                          HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                                          ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"
+                                          RecognizesAccessKey="True"
+                                          Content="{TemplateBinding ContentControl.Content}"/>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Label Content="Lyrebird Settings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,5,0,0" FontSize="18" FontWeight="Bold" Foreground="#FF424242"/>
+            <CheckBox Name="enabledCheckBox" Content="Server Enabled (Temporary)" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,50,0,0" Foreground="#Ff424242" Checked="enabledCheckBox_Checked" Unchecked="enabledCheckBox_Unchecked"/>
+            <CheckBox Name="supressProfileCheckBox" Content="Suppress profile modification warnings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,75,0,0" Foreground="#FF424242" Checked="supressProfileCheckBox_Checked" Unchecked="supressProfileCheckBox_Unchecked"/>
+            <CheckBox Name="defaultOnCheckBox" Content="Default server to be on at startup" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,100,0,0" Foreground="#FF424242" Checked="defaultOnCheckBox_Checked" Unchecked="defaultOnCheckBox_Unchecked"/>
+            <Label Content="Service Timeout (in milliseconds): " HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,120,0,0" Foreground="#FF424242"/>
+            <TextBox Name="timeoutTextBox" Text="200" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="200,122,15,0" TextChanged="timeoutTextBox_TextChanged"/>
+        </Grid>
+    </Border>
+</Window>

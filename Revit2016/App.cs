@@ -255,7 +255,6 @@ namespace LMNA.Lyrebird
             {
                 try
                 {
-                    
                     serviceHost = new ServiceHost(typeof(LyrebirdService), address);
                     NetNamedPipeBinding nnpb = new NetNamedPipeBinding();
                     nnpb.MaxReceivedMessageSize = int.MaxValue;

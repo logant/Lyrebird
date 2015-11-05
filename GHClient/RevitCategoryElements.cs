@@ -27,7 +27,7 @@ namespace LMNA.Lyrebird.GH
         List<string> elements;
 
         public RevitCategoryElemComp()
-            : base("Revit Category Elements", "RvtElem", "Revit category elements for ElementId parameters", "LMNts", "Utilities")
+            : base("Revit Category Elements", "RvtElem", "Revit category elements for ElementId parameters", Properties.Settings.Default.TabName, Properties.Settings.Default.PanelName)
         {
             if (appVersion == 1)
             {
@@ -98,20 +98,30 @@ namespace LMNA.Lyrebird.GH
             
             if (runCommand)
             {
-                elements.Clear();
-                // Open the Channel to Revit
-                LyrebirdChannel channel = new LyrebirdChannel(appVersion);
-                channel.Create();
-
-                if (channel != null)
+                try
                 {
-                    string documentName = channel.DocumentName();
-                    if (documentName != null)
+                    elements = new List<string>();
+                    elements.Clear();
+                    // Open the Channel to Revit
+                    
+                    LyrebirdChannel channel = new LyrebirdChannel(appVersion);
+                    
+                    channel.Create();
+                    
+                    if (channel != null)
                     {
-                        elements = channel.GetCategoryElements(eic);
-                    }
+                        string documentName = channel.DocumentName();
+                        if (documentName != null)
+                        {
+                            elements = channel.GetCategoryElements(eic);
+                        }
 
-                    channel.Dispose();
+                        channel.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.Forms.MessageBox.Show("Error\n" + ex.Message);
                 }
             }
             DA.SetDataList(0, elements);
@@ -140,11 +150,18 @@ namespace LMNA.Lyrebird.GH
 
         protected override void AppendAdditionalComponentMenuItems(System.Windows.Forms.ToolStripDropDown iMenu)
         {
+            Menu_AppendItem(iMenu, "UI Integration", Menu_UIClicked);
             // Revit Version Selector
             System.Windows.Forms.ToolStripMenuItem appItem = Menu_AppendItem(iMenu, "Application");
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2014", Menu_R2014Clicked, true, r2014));
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2015", Menu_R2015Clicked, true, r2015));
             appItem.DropDownItems.Add(Menu_AppendItem(iMenu, "Revit 2016", Menu_R2016Clicked, true, r2016));
+        }
+
+        private void Menu_UIClicked(object sender, EventArgs e)
+        {
+            UISettingsForm form = new UISettingsForm();
+            form.ShowDialog();
         }
 
         private void Menu_R2014Clicked(object sender, EventArgs e)

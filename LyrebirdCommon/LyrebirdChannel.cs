@@ -38,6 +38,11 @@ namespace LMNA.Lyrebird.LyrebirdCommon
                 {
                     _endpoint = new EndpointAddress("net.pipe://localhost/LMNts/LyrebirdServer/Revit2015/LyrebirdService");
                 }
+                else if (productId == 3)
+                {
+                    _endpoint = new EndpointAddress("net.pipe://localhost/LMNts/LyrebirdServer/Revit2016/LyrebirdService");
+                }
+
                 else
                 {
                     _endpoint = new EndpointAddress("net.pipe://localhost/LMNts/LyrebirdServer/Revit2014/LyrebirdService");

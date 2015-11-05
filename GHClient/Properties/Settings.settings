@@ -5,5 +5,11 @@
     <Setting Name="RevitVersion" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
+    <Setting Name="TabName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Misc</Value>
+    </Setting>
+    <Setting Name="PanelName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">LMNts</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

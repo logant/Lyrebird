@@ -38,7 +38,7 @@ namespace LMNA.Lyrebird.GH
         {
             parent = p;
             channel = c;
-
+            bool close = false;
 
             InitializeComponent();
 
@@ -51,22 +51,17 @@ namespace LMNA.Lyrebird.GH
                 try
                 {
                     string test = channel.DocumentName();
-                    if (test == null)
+                    if (test != null || !test.Contains("There was no endpoint listening"))
                     {
-                        MessageBox.Show("Error!!!!!!!!!!");
-                    }
-                    RevitObject[] temp = channel.FamilyNames().ToArray();
-                    if (temp != null && temp.Any())
-                        familyNames = channel.FamilyNames().ToList();
-                    else
-                    {
-                        MessageBox.Show("The Lyrebird Service for Revit could not be found.  Make sure the service is turned on and try again.");
-                        this.Close();
+                        RevitObject[] temp = channel.FamilyNames().ToArray();
+                        if (temp != null && temp.Any())
+                            familyNames = channel.FamilyNames().ToList();
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error\n" + ex.ToString());
+                    MessageBox.Show("The Lyrebird Service for Revit could not be found.  Make sure the service is turned on and try again.");
+                    close = true;
                 }
                 if (familyNames != null && familyNames.Count > 0)
                 {
@@ -91,6 +86,8 @@ namespace LMNA.Lyrebird.GH
                     }
                 }
             }
+            if (close)
+                cancelButton_Click(null, null);
         }
 
         private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

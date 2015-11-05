@@ -34,5 +34,29 @@ namespace LMNA.Lyrebird.GH.Properties {
                 this["RevitVersion"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Misc")]
+        public string TabName {
+            get {
+                return ((string)(this["TabName"]));
+            }
+            set {
+                this["TabName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("LMNts")]
+        public string PanelName {
+            get {
+                return ((string)(this["PanelName"]));
+            }
+            set {
+                this["PanelName"] = value;
+            }
+        }
     }
 }

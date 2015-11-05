@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Revit2014Server", "RevitServer\Revit2014Server.csproj", "{013AC102-4C2E-4EEF-9186-4D625E3D0743}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevitServer2014", "RevitServer\RevitServer2014.csproj", "{013AC102-4C2E-4EEF-9186-4D625E3D0743}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectionTest", "ConnectionTest\ConnectionTest.csproj", "{9B212BC8-28A6-49DE-A9CB-1EFFC55435BC}"
 EndProject
@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LyrebirdCommon", "LyrebirdC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GHClient", "GHClient\GHClient.csproj", "{FC26E0D7-C8C1-4619-9A99-78A13D400797}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Revit2015", "Revit2015\Revit2015.csproj", "{4302BD5B-44A2-4F67-94A3-A9B3A31FFC02}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevitServer", "Revit2015\RevitServer.csproj", "{4302BD5B-44A2-4F67-94A3-A9B3A31FFC02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Revit2016", "Revit2016\Revit2016.csproj", "{6685C258-D28F-4424-9682-523D046376F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +39,10 @@ Global
 		{4302BD5B-44A2-4F67-94A3-A9B3A31FFC02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4302BD5B-44A2-4F67-94A3-A9B3A31FFC02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4302BD5B-44A2-4F67-94A3-A9B3A31FFC02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6685C258-D28F-4424-9682-523D046376F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6685C258-D28F-4424-9682-523D046376F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6685C258-D28F-4424-9682-523D046376F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6685C258-D28F-4424-9682-523D046376F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

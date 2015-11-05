@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FC26E0D7-C8C1-4619-9A99-78A13D400797}</ProjectGuid>
+    <ProjectGuid>{013AC102-4C2E-4EEF-9186-4D625E3D0743}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LMNA.Lyrebird.GH</RootNamespace>
-    <AssemblyName>LMNA.Lyrebird.GHClient</AssemblyName>
+    <RootNamespace>LMNA.Lyrebird</RootNamespace>
+    <AssemblyName>LMNA.Lyrebird.RevitServer</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -31,25 +31,25 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GH_IO">
-      <HintPath>C:\Program Files\Common Files\McNeel\Rhinoceros\5.0\Plug-ins\Grasshopper (b45a29b1-4343-4035-989e-044e8580d9cf)\0.9.76.0\GH_IO.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Grasshopper">
-      <HintPath>C:\Program Files\Common Files\McNeel\Rhinoceros\5.0\Plug-ins\Grasshopper (b45a29b1-4343-4035-989e-044e8580d9cf)\0.9.76.0\Grasshopper.dll</HintPath>
+    <Reference Include="AdWindows">
+      <HintPath>C:\Program Files\Autodesk\Revit 2014\AdWindows.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="RhinoCommon">
-      <HintPath>C:\Program Files\Rhinoceros 5.0\System\RhinoCommon.dll</HintPath>
+    <Reference Include="RevitAPI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2014\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2014\RevitAPIUI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -59,10 +59,11 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GHClient.cs" />
-    <Compile Include="GHInfo.cs" />
-    <Compile Include="ParameterControl.xaml.cs">
-      <DependentUpon>ParameterControl.xaml</DependentUpon>
+    <Compile Include="App.cs" />
+    <Compile Include="Command.cs" />
+    <Compile Include="LyrebirdService.cs" />
+    <Compile Include="ModifyForm.xaml.cs">
+      <DependentUpon>ModifyForm.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -75,16 +76,35 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="RevitCategoryElements.cs" />
-    <Compile Include="SelectParameterForm.xaml.cs">
-      <DependentUpon>SelectParameterForm.xaml</DependentUpon>
+    <Compile Include="RemoveDataCmd.cs" />
+    <Compile Include="SelectRunElementsCmd.cs" />
+    <Compile Include="SelectRunsForm.xaml.cs">
+      <DependentUpon>SelectRunsForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="SetRevitDataForm.xaml.cs">
-      <DependentUpon>SetRevitDataForm.xaml</DependentUpon>
+    <Compile Include="SettingsCmd.cs" />
+    <Compile Include="SettingsForm.xaml.cs">
+      <DependentUpon>SettingsForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UISettingsForm.xaml.cs">
-      <DependentUpon>UISettingsForm.xaml</DependentUpon>
-    </Compile>
+    <Compile Include="TaskContainer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <EmbeddedResource Include="images\Lyrebird_Off.png" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <EmbeddedResource Include="Resources\IntersectionPoint.rfa" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="images\Lyrebird_On.png" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LyrebirdCommon\LyrebirdCommon.csproj">
@@ -93,48 +113,29 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="ParameterControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="SelectParameterForm.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="SetRevitDataForm.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UISettingsForm.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="images\LMNts_16x16.png" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="images\LMNts_transparency_80x17.png" />
+    <EmbeddedResource Include="images\Lyrebird_Select.png" />
+    <EmbeddedResource Include="images\Lyrebird_RemoveData.png" />
+    <EmbeddedResource Include="images\Lyrebird_Settings.png" />
+    <Content Include="LMNA.Lyrebird.RevitServer.addin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="images\LyreBird_24x24.png" />
+    <Page Include="ModifyForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SelectRunsForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SettingsForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>Copy "$(TargetPath)" "$(TargetDir)\$(AssemblyName).gha"
-Erase "$(TargetPath)"</PostBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
