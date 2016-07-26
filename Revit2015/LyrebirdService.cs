@@ -1058,7 +1058,7 @@ namespace LMNA.Lyrebird
                             try
                             {
                                 Level lvl = elem as Level;
-                                double elev = lvl.Elevation;
+                                double elev = lvl.ProjectElevation;
                                 levels.Add(lvl);
                             }
                             catch { }
@@ -1071,7 +1071,7 @@ namespace LMNA.Lyrebird
                         {
                             try
                             {
-                                elementIdCollection.Add(lvl.Name + " [" + lvl.Elevation.ToString() + "]," + lvl.Id.IntegerValue.ToString());
+                                elementIdCollection.Add(lvl.Name + " [" + lvl.ProjectElevation.ToString() + "]," + lvl.Id.IntegerValue.ToString());
                             }
                             catch { }
                         }
@@ -1465,11 +1465,11 @@ namespace LMNA.Lyrebird
                                             {
                                                 // Structural Column
                                                 fi = doc.Create.NewFamilyInstance(origin, symbol, lvl, Autodesk.Revit.DB.Structure.StructuralType.Column);
-                                                fi.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).Set(origin.Z - lvl.Elevation);
-                                                double topElev = ((Level)doc.GetElement(fi.get_Parameter(BuiltInParameter.FAMILY_TOP_LEVEL_PARAM).AsElementId())).Elevation;
-                                                if (lvl.Elevation + (origin.Z - lvl.Elevation) > topElev)
+                                                fi.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).Set(origin.Z - lvl.ProjectElevation);
+                                                double topElev = ((Level)doc.GetElement(fi.get_Parameter(BuiltInParameter.FAMILY_TOP_LEVEL_PARAM).AsElementId())).ProjectElevation;
+                                                if (lvl.ProjectElevation + (origin.Z - lvl.ProjectElevation) > topElev)
                                                 {
-                                                    fi.get_Parameter(BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM).Set((lvl.Elevation + (origin.Z - lvl.Elevation)) - topElev + 10.0);
+                                                    fi.get_Parameter(BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM).Set((lvl.ProjectElevation + (origin.Z - lvl.ProjectElevation)) - topElev + 10.0);
                                                 }
                                             }
                                             else
@@ -1843,9 +1843,9 @@ namespace LMNA.Lyrebird
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
 
                                                 double offset = 0;
-                                                if (Math.Abs(UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                                if (Math.Abs(UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                                 {
-                                                    offset = UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.Elevation;
+                                                    offset = UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.ProjectElevation;
                                                 }
 
                                                 // Create the wall
@@ -2113,9 +2113,9 @@ namespace LMNA.Lyrebird
 
                                             Level lvl = GetLevel(allPoints, doc);
 
-                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                             {
-                                                offset = UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(allPoints[0].Z, lengthDUT) - lvl.ProjectElevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -2201,9 +2201,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
 
                                             double offset = 0;
-                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                             {
-                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -2271,9 +2271,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
 
                                             double offset = 0;
-                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                             {
-                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -2409,7 +2409,7 @@ namespace LMNA.Lyrebird
 
                                     if (lvl.ProjectElevation != (UnitUtils.ConvertToInternalUnits(obj.Origin.Z, lengthDUT)))
                                     {
-                                        double offset = lvl.Elevation - lvl.ProjectElevation;
+                                        double offset = lvl.ProjectElevation - lvl.ProjectElevation;
                                         lvl.Elevation = (UnitUtils.ConvertToInternalUnits(obj.Origin.Z + offset, lengthDUT));
                                     }
 
@@ -3084,9 +3084,9 @@ namespace LMNA.Lyrebird
                                                 Level lvl = GetLevel(lbc.ControlPoints, doc);
 
                                                 double offset = 0;
-                                                if (Math.Abs(UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                                if (Math.Abs(UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                                 {
-                                                    offset = lvl.Elevation - UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT);
+                                                    offset = lvl.ProjectElevation - UnitUtils.ConvertToInternalUnits(curvePoints[0].Z, lengthDUT);
                                                 }
 
                                                 // Modify the wall
@@ -3318,9 +3318,9 @@ namespace LMNA.Lyrebird
 
                                             lvl = GetLevel(allPoints, doc);
 
-                                            if (Math.Abs(allPoints[0].Z - lvl.Elevation) > double.Epsilon)
+                                            if (Math.Abs(allPoints[0].Z - lvl.ProjectElevation) > double.Epsilon)
                                             {
-                                                offset = allPoints[0].Z - lvl.Elevation;
+                                                offset = allPoints[0].Z - lvl.ProjectElevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -3492,9 +3492,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
 
                                             double offset = 0;
-                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                             {
-                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -3698,9 +3698,9 @@ namespace LMNA.Lyrebird
                                             Level lvl = GetLevel(obj.Curves[0].ControlPoints, doc);
 
                                             double offset = 0;
-                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation) > double.Epsilon)
+                                            if (Math.Abs(UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation) > double.Epsilon)
                                             {
-                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.Elevation;
+                                                offset = UnitUtils.ConvertToInternalUnits(obj.Curves[0].ControlPoints[0].Z, lengthDUT) - lvl.ProjectElevation;
                                             }
 
                                             // Generate the curvearray from the incoming curves
@@ -4360,7 +4360,7 @@ namespace LMNA.Lyrebird
                     }
                     else
                     {
-                        if (Math.Abs(l.Elevation - UnitUtils.ConvertToInternalUnits(controlPoints[0].Z, lengthDUT)) < Math.Abs(lvl.Elevation - UnitUtils.ConvertToInternalUnits(controlPoints[0].Z, lengthDUT)))
+                        if (Math.Abs(l.Elevation - UnitUtils.ConvertToInternalUnits(controlPoints[0].Z, lengthDUT)) < Math.Abs(lvl.ProjectElevation - UnitUtils.ConvertToInternalUnits(controlPoints[0].Z, lengthDUT)))
                         {
                             lvl = l;
                         }
@@ -4387,7 +4387,8 @@ namespace LMNA.Lyrebird
                 if (hostFinder == null)
                 {
                     // check if the point family exists
-                    string path = typeof(LyrebirdService).Assembly.Location.Replace("LMNA.Lyrebird.Revit2015.dll", "IntersectionPoint.rfa");
+                    string path = new System.IO.FileInfo(typeof(LyrebirdService).Assembly.Location).DirectoryName + "\\IntersectionPoint.rfa";
+                    //string path = typeof(LyrebirdService).Assembly.Location.Replace("LMNA.Lyrebird.Revit2015.dll", "IntersectionPoint.rfa");
                     if (!System.IO.File.Exists(path))
                     {
                         // save the file from this assembly and load it into project
@@ -4412,7 +4413,7 @@ namespace LMNA.Lyrebird
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine("Error", ex.Message); ;
+                        Debug.WriteLine("Error", ex.Message);
                     }
                     
                     if (insertPoint != null)
@@ -4432,7 +4433,7 @@ namespace LMNA.Lyrebird
                         TaskDialog.Show("test", "InsertPoint family is still null, loading didn't work.");
                     }
                 }
-
+                
                 IList<ElementId> placePointIds = new List<ElementId>();
                 placePointIds = AdaptiveComponentInstanceUtils.GetInstancePlacementPointElementRefIds(hostFinder);
                 try
@@ -4475,7 +4476,6 @@ namespace LMNA.Lyrebird
                         {
                             host = e.Id;
                         }
-
                     }
                     else if (hostType == 2)
                     {
