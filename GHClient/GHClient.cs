@@ -299,7 +299,7 @@ namespace LMNA.Lyrebird.GH
                                                 }
                                             }
 
-                                            if (endPointElevations.Count == 1)
+                                            if (endPointElevations.Count != 1)
                                             {
                                                 // curves are planar in the XY plane
                                                 foreach (Curve rCurveSegment in rCurves)
