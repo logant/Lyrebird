@@ -1,0 +1,10 @@
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\bin\Debug\Lyrebird.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\bin\Debug\Lyrebird.pdb
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\bin\Debug\LyrebirdCommon.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\bin\Debug\LINE.Geometry.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\bin\Debug\LyrebirdCommon.pdb
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\obj\Debug\RevitLyrebirdServer.csprojResolveAssemblyReference.cache
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\obj\Debug\Lyrebird.Properties.Resources.resources
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\obj\Debug\RevitLyrebirdServer.csproj.GenerateResource.Cache
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\obj\Debug\Lyrebird.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\RevitLyrebirdServer\obj\Debug\Lyrebird.pdb

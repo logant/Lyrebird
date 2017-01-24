@@ -1,0 +1,13 @@
+G:\Work\Elk\Lyrebird\V2\GHLyrebirdClient\bin\Debug\GHLyrebirdClient.dll
+G:\Work\Elk\Lyrebird\V2\GHLyrebirdClient\bin\Debug\GHLyrebirdClient.pdb
+G:\Work\Elk\Lyrebird\V2\GHLyrebirdClient\obj\Debug\GHLyrebirdClient.csprojResolveAssemblyReference.cache
+G:\Work\Elk\Lyrebird\V2\GHLyrebirdClient\obj\Debug\GHLyrebirdClient.dll
+G:\Work\Elk\Lyrebird\V2\GHLyrebirdClient\obj\Debug\GHLyrebirdClient.pdb
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\bin\LyrebirdCommon.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\bin\LINE.Geometry.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\bin\LyrebirdCommon.pdb
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\obj\Debug\GHLyrebirdClient.csprojResolveAssemblyReference.cache
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\bin\LyrebirdGHClient.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\bin\LyrebirdGHClient.pdb
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\obj\Debug\LyrebirdGHClient.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\GHLyrebirdClient\obj\Debug\LyrebirdGHClient.pdb

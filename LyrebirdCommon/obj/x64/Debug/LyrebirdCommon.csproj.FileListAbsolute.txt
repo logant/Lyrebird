@@ -1,0 +1,7 @@
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\bin\x64\Debug\LyrebirdCommon.dll.config
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\bin\x64\Debug\LyrebirdCommon.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\bin\x64\Debug\LyrebirdCommon.pdb
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\bin\x64\Debug\LINE.Geometry.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\obj\x64\Debug\LyrebirdCommon.csprojResolveAssemblyReference.cache
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\obj\x64\Debug\LyrebirdCommon.dll
+G:\Work\Elk\Lyrebird\V2\Lyrebird\LyrebirdCommon\obj\x64\Debug\LyrebirdCommon.pdb

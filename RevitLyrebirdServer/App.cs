@@ -1,0 +1,167 @@
+﻿using System;
+using System.Diagnostics;
+using System.ServiceModel;
+using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
+using Autodesk.Revit.UI;
+
+
+
+namespace Lyrebird
+{
+    public class LBApp : IExternalApplication
+    {
+        static LBApp _thisApp = null;
+        static UIControlledApplication _uiApp = null;
+        static RibbonItem serverButton;
+
+        ServiceHost serviceHost;
+        Uri address;
+        internal static UIApplication UIApp = null;
+
+        bool serviceRunning = false;
+        internal static LBHandler Handler = null;
+        internal static ExternalEvent ExEvent = null;
+
+        public static LBApp Instance
+        {
+            get { return _thisApp; }
+        }
+
+        public Result OnShutdown(UIControlledApplication application)
+        {
+            StopServer();
+            return Result.Succeeded;
+        }
+
+        public Result OnStartup(UIControlledApplication application)
+        {
+            _thisApp = this;
+            _uiApp = application;
+            serviceRunning = false;
+            address = new Uri(Properties.Settings.Default.BaseAddress);
+
+            // create the toggle button
+            PushButtonData pbd = new PushButtonData("Lyrebird Server", "Lyrebird\nServer", typeof(LBApp).Assembly.Location, "Lyrebird.ToggleCommand")
+            {
+                LargeImage = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_Off.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()),
+                ToolTip = "Lyrebird Server is current off.",
+            };
+
+            RibbonPanel panel = application.CreateRibbonPanel("Lyrebird");
+            serverButton = panel.AddItem(pbd) as PushButton;
+
+            return Result.Succeeded;
+        }
+
+        public void Toggle(UIApplication uiApplication)
+        {
+            if (!serviceRunning)
+            {
+                if (StartServer())
+                {
+                    PushButton button = serverButton as PushButton;
+                    BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_On.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    if (button != null)
+                    {
+                        button.LargeImage = bms;
+                        button.ToolTip = "The Lyrebird Server is currently on and will accept requests for data or create objects.  Push button to toggle the server off.";
+                    }
+                    UIApp = uiApplication;
+                    serviceRunning = true;
+                }
+                else
+                {
+                    UIApp = uiApplication;
+                    serviceRunning = false;
+                }
+                
+            }
+            else
+            {
+                if (StopServer())
+                {
+                    PushButton button = serverButton as PushButton;
+                    BitmapSource bms = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(Properties.Resources.Lyrebird_Off.GetHbitmap(), IntPtr.Zero, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    if (button != null)
+                    {
+                        button.LargeImage = bms;
+                        button.ToolTip = "The Lyrebird Server is cu|rrently off and will not accept requests for data or create objects.  Push button to toggle the server on.";
+                    }
+                }
+                UIApp = null;
+                serviceRunning = false;
+            }
+        }
+
+        private bool StartServer()
+        {
+            if (serviceHost == null || serviceHost.State != CommunicationState.Opened)
+            {
+                try
+                {
+                    serviceHost = new ServiceHost(typeof(LBService), address);
+                    NetNamedPipeBinding nnpb = new NetNamedPipeBinding();
+                    nnpb.MaxReceivedMessageSize = int.MaxValue;
+                    serviceHost.AddServiceEndpoint(typeof(ILyrebirdService), nnpb, "\\Revit" + _uiApp.ControlledApplication.VersionNumber);
+                    serviceHost.Open();
+                    if (serviceRunning)
+                    {
+                        // Remove any tasks sent while the server was off
+                        while (TaskContainer.Instance.HasTaskToPerform)
+                        {
+                            TaskContainer.Instance.DequeueTask();
+                        }
+
+                        // start the External Event
+                        Handler = new LBHandler();
+                        ExEvent = ExternalEvent.Create(Handler);
+                    }
+                    return true;
+                }
+                catch (AddressAlreadyInUseException ex)
+                {
+                    TaskDialog dlg = new TaskDialog("Lyrebird Error");
+                    dlg.MainInstruction = "Error Opening Lyrebird Server";
+                    dlg.MainContent = "A Lyrebird Server is already open in another instance of Revit.  Make sure you turn off all running Lyrebird Servers before toggling this one on.";
+                    dlg.Show();
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    TaskDialog.Show("Errord", ex.Message);
+                    serviceHost = null;
+                    Handler = null;
+                    ExEvent = null;
+                    return false;
+                }
+            }
+            else
+                return false;
+        }
+
+        private bool StopServer()
+        {
+            if (serviceHost != null)
+            {
+                try
+                {
+                    serviceHost.Abort();
+                    serviceHost.Close();
+                    serviceHost = null;
+                    Handler = null;
+                    ExEvent = null;
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    Debug.WriteLine(exception.Message);
+                    TaskDialog.Show("Error", exception.Message);
+                    return false;
+                }
+            }
+            else
+                return false;
+        }
+    }
+}
