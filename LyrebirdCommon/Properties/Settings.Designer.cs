@@ -25,7 +25,7 @@ namespace Lyrebird.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("net.pipe://localhost/LMNts/LyrebirdServer")]
+        [global::System.Configuration.DefaultSettingValueAttribute("net.pipe://localhost/logant/LyrebirdServer")]
         public string BaseAddress {
             get {
                 return ((string)(this["BaseAddress"]));

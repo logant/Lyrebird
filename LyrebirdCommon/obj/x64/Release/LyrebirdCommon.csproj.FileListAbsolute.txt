@@ -1,0 +1,8 @@
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\LyrebirdCommon.dll.config
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\LyrebirdCommon.dll
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\LyrebirdCommon.pdb
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\LINE.Geometry.dll
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\LINE.Geometry.pdb
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\obj\x64\Release\LyrebirdCommon.csprojResolveAssemblyReference.cache
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\obj\x64\Release\LyrebirdCommon.dll
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\obj\x64\Release\LyrebirdCommon.pdb

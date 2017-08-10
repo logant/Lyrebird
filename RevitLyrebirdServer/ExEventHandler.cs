@@ -18,9 +18,11 @@ namespace Lyrebird
             }
             catch (Exception ex)
             {
-                TaskDialog dlg = new TaskDialog("Lyrebird Error");
-                dlg.TitleAutoPrefix = false;
-                dlg.MainInstruction = "Error";
+                var dlg = new TaskDialog("Lyrebird Error")
+                {
+                    TitleAutoPrefix = false,
+                    MainInstruction = "Error"
+                };
                 dlg.MainInstruction = ex.Message;
                 dlg.Show();
             }

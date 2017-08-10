@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Autodesk.Revit.UI;
 
 
-
 namespace Lyrebird
 {
     public class LBApp : IExternalApplication
@@ -23,10 +22,7 @@ namespace Lyrebird
         internal static LBHandler Handler = null;
         internal static ExternalEvent ExEvent = null;
 
-        public static LBApp Instance
-        {
-            get { return _thisApp; }
-        }
+        public static LBApp Instance => _thisApp;
 
         public Result OnShutdown(UIControlledApplication application)
         {
@@ -39,7 +35,7 @@ namespace Lyrebird
             _thisApp = this;
             _uiApp = application;
             serviceRunning = false;
-            address = new Uri(Properties.Settings.Default.BaseAddress);
+            address = new Uri(Properties.Settings.Default.BaseAddress + "/Revit" + _uiApp.ControlledApplication.VersionNumber);
 
             // create the toggle button
             PushButtonData pbd = new PushButtonData("Lyrebird Server", "Lyrebird\nServer", typeof(LBApp).Assembly.Location, "Lyrebird.ToggleCommand")
@@ -101,9 +97,11 @@ namespace Lyrebird
                 try
                 {
                     serviceHost = new ServiceHost(typeof(LBService), address);
+                    serviceHost.Description.Behaviors.Add(new System.ServiceModel.Discovery.ServiceDiscoveryBehavior());
                     NetNamedPipeBinding nnpb = new NetNamedPipeBinding();
                     nnpb.MaxReceivedMessageSize = int.MaxValue;
-                    serviceHost.AddServiceEndpoint(typeof(ILyrebirdService), nnpb, "\\Revit" + _uiApp.ControlledApplication.VersionNumber);
+                    serviceHost.AddServiceEndpoint(new System.ServiceModel.Discovery.UdpDiscoveryEndpoint());
+                    serviceHost.AddServiceEndpoint(typeof(ILyrebirdService), nnpb, string.Empty);
                     serviceHost.Open();
                     if (serviceRunning)
                     {
@@ -119,7 +117,7 @@ namespace Lyrebird
                     }
                     return true;
                 }
-                catch (AddressAlreadyInUseException ex)
+                catch (AddressAlreadyInUseException)
                 {
                     TaskDialog dlg = new TaskDialog("Lyrebird Error");
                     dlg.MainInstruction = "Error Opening Lyrebird Server";
@@ -129,15 +127,15 @@ namespace Lyrebird
                 }
                 catch (Exception ex)
                 {
-                    TaskDialog.Show("Errord", ex.Message);
+                    TaskDialog.Show("Error", ex.Message);
                     serviceHost = null;
                     Handler = null;
                     ExEvent = null;
                     return false;
                 }
             }
-            else
-                return false;
+
+            return false;
         }
 
         private bool StopServer()

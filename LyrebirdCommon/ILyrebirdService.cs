@@ -27,5 +27,8 @@ namespace Lyrebird
 
         [OperationContract]
         bool RecieveData(List<RevitObject> elements, Guid uniqueId, string nickName);
+
+        [OperationContract]
+        bool LbAction(Dictionary<string, object> inputs, out Dictionary<string, object> outputs);
     }
 }

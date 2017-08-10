@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
 namespace Lyrebird
@@ -9,12 +9,12 @@ namespace Lyrebird
     public class LBService : ILyrebirdService
     {
         private string currentDocName = "NULL";
-        private static readonly object _locker = new object();
+        private static readonly object Locker = new object();
         private const int WAIT_TIMEOUT = 1000;
 
         public bool GetDocumentName(out string docName)
         {
-            lock (_locker)
+            lock (Locker)
             {
                 UIApplication uiApp = LBApp.UIApp;
                 try
@@ -25,12 +25,9 @@ namespace Lyrebird
                 {
                     docName = "NOT FOUND";
                 }
-                Monitor.Wait(_locker, WAIT_TIMEOUT);
+                Monitor.Wait(Locker, WAIT_TIMEOUT);
             }
-            if (docName != string.Empty && docName != null)
-                return true;
-            else
-                return false;
+            return !string.IsNullOrEmpty(docName);
         }
 
         public bool GetCategoryElements(ElementIdCategory eic, out List<string> categoryElements)
@@ -57,5 +54,26 @@ namespace Lyrebird
         {
             throw new NotImplementedException();
         }
+
+        public bool LbAction(Dictionary<string, object> inputs, out Dictionary<string, object> outputs)
+        {
+            outputs = null;
+            lock (Locker)
+            {
+                UIApplication uiApp = LBApp.UIApp;
+                try
+                {
+                    //docName = uiApp.ActiveUIDocument.Document.Title;
+                }
+                catch
+                {
+                    //docName = "NOT FOUND";
+                }
+                Monitor.Wait(Locker, WAIT_TIMEOUT);
+                //outputs = new Dictionary<string, object> { { "docName", docName } };
+            }
+            
+            return (outputs == null);
+        }
     }
-}
+}                                                                              

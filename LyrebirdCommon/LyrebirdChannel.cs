@@ -33,7 +33,7 @@ namespace Lyrebird
             {
                 _binding = new NetNamedPipeBinding();
                 _binding.MaxReceivedMessageSize = 52428800;
-                _endPoint = new EndpointAddress(Properties.Settings.Default.BaseAddress + "\\" + _productId);
+                _endPoint = new EndpointAddress(Properties.Settings.Default.BaseAddress + "/" + _productId);
                 if (null != _endPoint && !_endPoint.IsNone)
                 {
                     _factory = new ChannelFactory<ILyrebirdService>(_binding, _endPoint);
@@ -68,10 +68,10 @@ namespace Lyrebird
                     else
                         return "Document Not Found";
                 }
-                catch (EndpointNotFoundException ex)
+                catch (EndpointNotFoundException)
                 {
                     Dispose();
-                    return "Lyrebird Service for " + _productId + " is not open";
+                    return "Lyrebird Service for " + _productId + " is not open\nEndpointAddress: " + Properties.Settings.Default.BaseAddress + "/" + _productId;
                 }
                 catch (Exception ex)
                 {
@@ -226,6 +226,21 @@ namespace Lyrebird
                 }
             }
             return false;
+        }
+
+        public Dictionary<string, object> LBAction(Dictionary<string, object> inputs)
+        {
+            if (!IsValid()) return null;
+            try
+            {
+                var outputs = new Dictionary<string, object>();
+                _service.LbAction(inputs, out outputs);
+                return outputs;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public bool IsValid()

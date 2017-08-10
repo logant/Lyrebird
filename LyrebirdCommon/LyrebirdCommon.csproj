@@ -50,7 +50,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="LINE.Geometry">
-      <HintPath>..\..\libs\LINE.Geometry.dll</HintPath>
+      <HintPath>..\..\..\Git\CrossPlatform\LINE.Geometry\bin\x64\Release\LINE.Geometry.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -62,6 +62,7 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ILyrebirdAction.cs" />
     <Compile Include="ILyrebirdService.cs" />
     <Compile Include="LyrebirdChannel.cs" />
     <Compile Include="Objects.cs" />
