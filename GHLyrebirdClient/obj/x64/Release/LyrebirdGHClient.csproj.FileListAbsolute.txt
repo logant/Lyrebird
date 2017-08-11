@@ -7,3 +7,12 @@ D:\Development\GitHub\Lyrebird\GHLyrebirdClient\bin\x64\Release\LINE.Geometry.pd
 D:\Development\GitHub\Lyrebird\GHLyrebirdClient\obj\x64\Release\LyrebirdGHClient.csprojResolveAssemblyReference.cache
 D:\Development\GitHub\Lyrebird\GHLyrebirdClient\obj\x64\Release\LyrebirdGHClient.dll
 D:\Development\GitHub\Lyrebird\GHLyrebirdClient\obj\x64\Release\LyrebirdGHClient.pdb
+E:\Development\Git\Lyrebird\GHLyrebirdClient\bin\x64\Release\LyrebirdGHClient.dll
+E:\Development\Git\Lyrebird\GHLyrebirdClient\bin\x64\Release\LyrebirdGHClient.pdb
+E:\Development\Git\Lyrebird\GHLyrebirdClient\bin\x64\Release\LyrebirdCommon.dll
+E:\Development\Git\Lyrebird\GHLyrebirdClient\bin\x64\Release\LINE.Geometry.dll
+E:\Development\Git\Lyrebird\GHLyrebirdClient\bin\x64\Release\LyrebirdCommon.pdb
+E:\Development\Git\Lyrebird\GHLyrebirdClient\bin\x64\Release\LINE.Geometry.pdb
+E:\Development\Git\Lyrebird\GHLyrebirdClient\obj\x64\Release\LyrebirdGHClient.csprojResolveAssemblyReference.cache
+E:\Development\Git\Lyrebird\GHLyrebirdClient\obj\x64\Release\LyrebirdGHClient.dll
+E:\Development\Git\Lyrebird\GHLyrebirdClient\obj\x64\Release\LyrebirdGHClient.pdb

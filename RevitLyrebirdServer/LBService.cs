@@ -63,11 +63,42 @@ namespace Lyrebird
                 UIApplication uiApp = LBApp.UIApp;
                 try
                 {
-                    //docName = uiApp.ActiveUIDocument.Document.Title;
+                    Guid cmdGuid = Guid.Empty;
+                    string path = string.Empty;
+                    if (inputs.ContainsKey("CommandGuid"))
+                        cmdGuid = (Guid)inputs["CommandGuid"];
+                    if(inputs.ContainsKey("AssemblyPath"))
+                        path = (string) inputs["AssemblyPath"];
+
+                    if (cmdGuid != Guid.Empty && string.IsNullOrEmpty(path))
+                    {
+                        var assembly = Assembly.LoadFrom(path);
+                        foreach (Type type in assembly.GetTypes())
+                        {
+                            var prop =
+                                type.GetProperty("CommandGuid", BindingFlags.Static | BindingFlags.Public);
+                            if (prop != null)
+                            {
+                                var val = prop.GetValue(null, null);
+                                if (val == null)
+                                    continue;
+                                if ((Guid)val == cmdGuid)
+                                {
+                                    var method = type.GetMethod("Command", BindingFlags.Static);
+                                    object[] parameters = {uiApp, inputs, null};
+                                    object result = method.Invoke(null, parameters);
+                                    bool boolResult = (bool) result;
+                                    if (boolResult)
+                                        outputs = (Dictionary<string, object>) parameters[2];
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
                 catch
                 {
-                    //docName = "NOT FOUND";
+                    //do nothing
                 }
                 Monitor.Wait(Locker, WAIT_TIMEOUT);
                 //outputs = new Dictionary<string, object> { { "docName", docName } };

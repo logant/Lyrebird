@@ -9,3 +9,14 @@ D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.Prop
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\RevitLyrebirdServer.csproj.GenerateResource.Cache
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.dll
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.pdb
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\bin\x64\Release\Lyrebird.dll
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\bin\x64\Release\Lyrebird.pdb
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LyrebirdCommon.dll
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LINE.Geometry.dll
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LyrebirdCommon.pdb
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LINE.Geometry.pdb
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\RevitLyrebirdServer.csprojResolveAssemblyReference.cache
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.Properties.Resources.resources
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\RevitLyrebirdServer.csproj.GenerateResource.Cache
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.dll
+E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.pdb

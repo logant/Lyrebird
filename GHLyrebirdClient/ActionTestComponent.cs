@@ -6,7 +6,7 @@ using Rhino.Geometry;
 
 namespace Lyrebird
 {
-    public class ActionTestComponent : GH_Component, ILyrebirdAction
+    public class ActionTestComponent : GH_Component
     {
         private bool _reset = true;
         private string _serverVersion = "Revit2017";
@@ -56,17 +56,20 @@ namespace Lyrebird
 
                 if (channel.Create())
                 {
-                    Dictionary<string, object> input = new Dictionary<string, object> {{"CommandGuid", CommandGuid}, {"AssemblyPath", typeof(ActionTestComponent).Assembly.Location } };
+                    Dictionary<string, object> input = new Dictionary<string, object> {{"CommandGuid", Lyrebird.GetRevitDocName.CommandGuid}, {"AssemblyPath", typeof(ActionTestComponent).Assembly.Location } };
                     var output = channel.LBAction(input);
                     if (output == null || !output.ContainsKey("docName"))
+                    {
+                        DA.SetData(0, "output is null or doesn't have 'docName'");
                         return;
+                    }
 
                     var docName = output["docName"];
-                    DA.SetData(1, docName);
+                    DA.SetData(0, docName);
                 }
                 else
                 {
-                    DA.SetData(1, "Did not successfully create a channel");
+                    DA.SetData(0, "Did not successfully create a channel");
                 }
             }
             else if (!send)
@@ -84,12 +87,5 @@ namespace Lyrebird
         /// Gets the unique ID for this component. Do not change this ID after release.
         /// </summary>
         public override Guid ComponentGuid => new Guid("8a9ce1a6-9861-49f0-8b3b-535779d197b5");
-
-        /// <summary>
-        /// Sets the LyrebirdAction CommandID. Maybe I should just use the ComponentGuid if 
-        /// I'm going to be creating a separate component for each action?
-        /// </summary>
-        public Guid CommandGuid => new Guid("fa988416-732d-47f0-9140-9a8b22306b07");
-        
     }
 }

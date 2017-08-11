@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Lyrebird
 {
-    public interface ILyrebirdAction
+    public abstract class LyrebirdAction
     {
-        Guid CommandGuid { get; }
+        public abstract Guid CommandGuid { get; }
     }
 }

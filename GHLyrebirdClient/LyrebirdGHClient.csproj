@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Lyrebird</RootNamespace>
     <AssemblyName>LyrebirdGHClient</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -57,11 +57,11 @@
       <HintPath>C:\Program Files\Common Files\McNeel\Rhinoceros\5.0\Plug-ins\Grasshopper (b45a29b1-4343-4035-989e-044e8580d9cf)\0.9.76.0\Grasshopper.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitAPI">
+    <Reference Include="RevitAPI, Version=17.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitAPIUI">
+    <Reference Include="RevitAPIUI, Version=17.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
       <Private>False</Private>
     </Reference>
