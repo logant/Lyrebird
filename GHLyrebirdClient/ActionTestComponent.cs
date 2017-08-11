@@ -56,7 +56,22 @@ namespace Lyrebird
 
                 if (channel.Create())
                 {
-                    Dictionary<string, object> input = new Dictionary<string, object> {{"CommandGuid", Lyrebird.GetRevitDocName.CommandGuid}, {"AssemblyPath", typeof(ActionTestComponent).Assembly.Location } };
+                    string assemblyPath = this.GetType().Assembly.Location;
+                    if (string.IsNullOrEmpty(assemblyPath))
+                        return;
+
+                    // Get the RevitAPI path
+                    List<string> revitApiPath = channel.GetRevitAPIPath();
+                    System.Windows.Forms.MessageBox.Show("revitApiPath is null? " + (revitApiPath == null).ToString());
+                    if (revitApiPath == null)
+                        return;
+
+                    foreach (string refPath in revitApiPath)
+                    {
+                        AppDomain.CurrentDomain.Load(refPath);
+                    }
+
+                    Dictionary<string, object> input = new Dictionary<string, object> {{"CommandGuid", Lyrebird.GetRevitDocName.CommandGuid}, {"AssemblyPath", assemblyPath } };
                     var output = channel.LBAction(input);
                     if (output == null || !output.ContainsKey("docName"))
                     {

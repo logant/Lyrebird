@@ -233,6 +233,8 @@ namespace Lyrebird
             if (!IsValid()) return null;
             try
             {
+                System.Windows.MessageBox.Show(
+                    "At the start of the LyrebirdCommon.LBChannel.LBAction method, so apparently I'm valid so far");
                 var outputs = new Dictionary<string, object>();
                 _service.LbAction(inputs, out outputs);
                 return outputs;
@@ -241,6 +243,28 @@ namespace Lyrebird
             {
                 return null;
             }
+        }
+
+        public List<string> GetRevitAPIPath()
+        {
+            if (IsValid())
+            {
+                try
+                {
+                    List<string> apiPaths;
+                    if (_service.GetApiPath(out apiPaths))
+                        return apiPaths;
+
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show("Exception at API Path:\n" + ex.Message);
+                    Dispose();
+                    return null;
+                }
+            }
+            return null;
         }
 
         public bool IsValid()

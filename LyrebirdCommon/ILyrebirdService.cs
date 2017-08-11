@@ -30,5 +30,8 @@ namespace Lyrebird
 
         [OperationContract]
         bool LbAction(Dictionary<string, object> inputs, out Dictionary<string, object> outputs);
+
+        [OperationContract]
+        bool GetApiPath(out List<string> apiDirectory);
     }
 }

@@ -63,16 +63,18 @@ namespace Lyrebird
                 UIApplication uiApp = LBApp.UIApp;
                 try
                 {
+                    //System.Windows.MessageBox.Show("I'm inside of Revit, in the LBService.LbAction method.");
                     Guid cmdGuid = Guid.Empty;
                     string path = string.Empty;
                     if (inputs.ContainsKey("CommandGuid"))
                         cmdGuid = (Guid)inputs["CommandGuid"];
                     if(inputs.ContainsKey("AssemblyPath"))
                         path = (string) inputs["AssemblyPath"];
-
-                    if (cmdGuid != Guid.Empty && string.IsNullOrEmpty(path))
+                    //System.Windows.MessageBox.Show("Path: " + path + "\nGuid: " + cmdGuid.ToString());
+                    if (cmdGuid != Guid.Empty && !string.IsNullOrEmpty(path))
                     {
-                        var assembly = Assembly.LoadFrom(path);
+                        //System.Windows.MessageBox.Show("I'm inside of Revit, in the LBService.LbAction method.\nPath: " + path + "\nGuid: " + cmdGuid.ToString());
+                        var assembly = Assembly.LoadFile(path);
                         foreach (Type type in assembly.GetTypes())
                         {
                             var prop =
@@ -84,7 +86,10 @@ namespace Lyrebird
                                     continue;
                                 if ((Guid)val == cmdGuid)
                                 {
+                                    System.Windows.MessageBox.Show("I'm about to try and launch the method.");
                                     var method = type.GetMethod("Command", BindingFlags.Static);
+
+                                    
                                     object[] parameters = {uiApp, inputs, null};
                                     object result = method.Invoke(null, parameters);
                                     bool boolResult = (bool) result;
@@ -96,8 +101,9 @@ namespace Lyrebird
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    System.Windows.MessageBox.Show("I threw an exception.  :(\n" + ex.Message);
                     //do nothing
                 }
                 Monitor.Wait(Locker, WAIT_TIMEOUT);
@@ -105,6 +111,36 @@ namespace Lyrebird
             }
             
             return (outputs == null);
+        }
+
+        public bool GetApiPath(out List<string> apiDirectories)
+        {
+            lock (Locker)
+            {
+                UIApplication uiApp = LBApp.UIApp;
+                try
+                {
+                    apiDirectories = new List<string>();
+                    string installPath = null;
+                    foreach (var reference in typeof(LBService).Assembly.GetReferencedAssemblies())
+                    {
+                        var location = Assembly.ReflectionOnlyLoad(reference.FullName).Location;
+                        if (location != null)
+                        {
+                            string refPath = location.ToLower();
+                            if (refPath.Contains("revitapi.dll") || refPath.Contains("revitapiui.dll"))
+                                apiDirectories.Add(refPath);
+                        }
+                    }
+                    apiDirectories = null;
+                }
+                catch
+                {
+                    apiDirectories = null;
+                }
+                Monitor.Wait(Locker, WAIT_TIMEOUT);
+            }
+            return (apiDirectories == null);
         }
     }
 }                                                                              

@@ -61,7 +61,7 @@
       <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitAPIUI, Version=17.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <Reference Include="RevitAPIUI">
       <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
       <Private>False</Private>
     </Reference>
