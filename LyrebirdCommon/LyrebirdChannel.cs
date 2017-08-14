@@ -233,8 +233,8 @@ namespace Lyrebird
             if (!IsValid()) return null;
             try
             {
-                System.Windows.MessageBox.Show(
-                    "At the start of the LyrebirdCommon.LBChannel.LBAction method, so apparently I'm valid so far");
+//                System.Windows.MessageBox.Show(
+//                    "At the start of the LyrebirdCommon.LBChannel.LBAction method, so apparently I'm valid so far");
                 var outputs = new Dictionary<string, object>();
                 _service.LbAction(inputs, out outputs);
                 return outputs;

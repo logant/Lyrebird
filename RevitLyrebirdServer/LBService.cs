@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Autodesk.Revit.UI;
@@ -74,36 +77,80 @@ namespace Lyrebird
                     if (cmdGuid != Guid.Empty && !string.IsNullOrEmpty(path))
                     {
                         //System.Windows.MessageBox.Show("I'm inside of Revit, in the LBService.LbAction method.\nPath: " + path + "\nGuid: " + cmdGuid.ToString());
-                        var assembly = Assembly.LoadFile(path);
-                        foreach (Type type in assembly.GetTypes())
+                        var assembly = Assembly.LoadFrom(path);
+                        Type[] types = null;
+                        try
                         {
+                            types = assembly.GetTypes();
+                        }
+                        catch (ReflectionTypeLoadException e)
+                        {
+                            types = e.Types.Where(t => t != null).ToArray();
+                        }
+                        //System.Windows.MessageBox.Show("Type array retrieved.\nNull?: " + (types == null).ToString());
+                        
+                        foreach (Type type in types)
+                        {
+                            //System.Windows.MessageBox.Show("In the types loop");
                             var prop =
                                 type.GetProperty("CommandGuid", BindingFlags.Static | BindingFlags.Public);
                             if (prop != null)
                             {
+                                //System.Windows.MessageBox.Show("found the property");
                                 var val = prop.GetValue(null, null);
                                 if (val == null)
                                     continue;
                                 if ((Guid)val == cmdGuid)
                                 {
-                                    System.Windows.MessageBox.Show("I'm about to try and launch the method.");
-                                    var method = type.GetMethod("Command", BindingFlags.Static);
-
+                                    //System.Windows.MessageBox.Show("I'm about to try and launch the method.");
                                     
-                                    object[] parameters = {uiApp, inputs, null};
-                                    object result = method.Invoke(null, parameters);
+                                    // Load the RevitAPI libraries.
+                                    string installPath = null;
+                                    foreach (var reference in typeof(LBService).Assembly.GetReferencedAssemblies())
+                                    {
+                                        string refPath = Assembly.ReflectionOnlyLoad(reference.FullName).Location
+                                            .ToLower();
+                                        if (refPath.Contains("revitapi.dll") || refPath.Contains("revitapiui.dll"))
+                                        {
+                                            installPath = new FileInfo(refPath).DirectoryName;
+                                            break;
+                                        }
+                                    }
+
+                                    if (installPath == null)
+                                        break;
+                                    //System.Windows.MessageBox.Show("Testing:\n" + installPath);
+                                    ConstructorInfo ctor = type.GetConstructor(new[] {typeof(string)});
+                                    
+                                    object inst = ctor.Invoke(new object[] {installPath});
+                                    if (inst == null)
+                                        break;
+                                    //System.Windows.MessageBox.Show("Constructor instantiated");
+                                    var method = type.GetMethod("Command");
+                                    object[] parameters = {uiApp, inputs, new Dictionary<string, object>()};
+                                    //System.Windows.MessageBox.Show("About to try and run the getdoc method");
+                                    //System.Windows.MessageBox.Show(
+//                                        "inst: " + (inst == null).ToString() +
+//                                        "\nparameters: " + (inst == null).ToString() +
+//                                        "\nmethod: " + (method == null).ToString());
+                                    object result = method.Invoke(inst, parameters);
+//                                    System.Windows.MessageBox.Show("We've run the get doc method!!");
                                     bool boolResult = (bool) result;
                                     if (boolResult)
                                         outputs = (Dictionary<string, object>) parameters[2];
                                     break;
                                 }
                             }
+                            else
+                            {
+                                System.Windows.MessageBox.Show("Type is not the one I want.");
+                            }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show("I threw an exception.  :(\n" + ex.Message);
+                    System.Windows.MessageBox.Show("I threw an exception.  :(\n" + ex.ToString());
                     //do nothing
                 }
                 Monitor.Wait(Locker, WAIT_TIMEOUT);
