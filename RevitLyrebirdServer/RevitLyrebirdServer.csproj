@@ -69,6 +69,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Discovery" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -82,12 +83,16 @@
     <Compile Include="App.cs" />
     <Compile Include="ExEventHandler.cs" />
     <Compile Include="LBService.cs" />
+    <Compile Include="LyrebirdSettingsWindow.xaml.cs">
+      <DependentUpon>LyrebirdSettingsWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="SettingsCmd.cs" />
     <Compile Include="TaskContainer.cs" />
     <Compile Include="ToggleCommand.cs" />
   </ItemGroup>
@@ -108,6 +113,15 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="images\Lyrebird_Off.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="LyrebirdSettingsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

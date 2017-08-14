@@ -44,8 +44,18 @@ namespace Lyrebird
                 ToolTip = "Lyrebird Server is current off.",
             };
 
+            PushButtonData settingsPbd = new PushButtonData("Lyrebird Settings", "Lyrebird Settings", typeof(LBApp).Assembly.Location, "Lyrebird.SettingsCmd")
+            {
+                ToolTip = "Setup Lyrebird"
+            };
+
             RibbonPanel panel = application.CreateRibbonPanel("Lyrebird");
-            serverButton = panel.AddItem(pbd) as PushButton;
+            SplitButtonData sbd = new SplitButtonData("Lyrebird", "Lyrebird");
+            SplitButton sb = panel.AddItem(sbd) as SplitButton;
+            serverButton = sb.AddPushButton(pbd);
+            sb.AddPushButton(settingsPbd);
+            sb.IsSynchronizedWithCurrentItem = false;
+
 
             return Result.Succeeded;
         }

@@ -77,33 +77,33 @@ namespace Lyrebird
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            var send = false;
-            var pt = Point3d.Origin;
-            DA.GetData(0, ref send);
-            DA.GetData(1, ref pt);
+            //var send = false;
+            //var pt = Point3d.Origin;
+            //DA.GetData(0, ref send);
+            //DA.GetData(1, ref pt);
 
-            if (send && _reset)
-            {
-                // set _reset to false.  This will prevent lyrebird from sending information if you forget to turn the send trigger off.
-                _reset = false;
+            //if (send && _reset)
+            //{
+            //    // set _reset to false.  This will prevent lyrebird from sending information if you forget to turn the send trigger off.
+            //    _reset = false;
 
-                // Create the Channel
-                var channel = new LBChannel(_serverVersion);
+            //    // Create the Channel
+            //    var channel = new LBChannel(_serverVersion);
 
-                if (channel.Create())
-                {
-                    var docName = channel.GetDocumentName();
-                    DA.SetData(1, docName);
-                }
-                else
-                {
-                    DA.SetData(1, "Did not successfully create a channel");
-                }
-            }
-            else if (!send)
-            {
-                _reset = true;
-            }
+            //    if (channel.Create())
+            //    {
+            //        var docName = channel.GetDocumentName();
+            //        DA.SetData(1, docName);
+            //    }
+            //    else
+            //    {
+            //        DA.SetData(1, "Did not successfully create a channel");
+            //    }
+            //}
+            //else if (!send)
+            //{
+            //    _reset = true;
+            //}
         }
 
 

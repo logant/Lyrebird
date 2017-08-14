@@ -52,6 +52,7 @@ namespace Lyrebird
             return created;
         }
 
+        /*
         /// <summary>
         /// LBChannel call of the ILyrebirdService GetDocumentName method.
         /// </summary>
@@ -98,7 +99,7 @@ namespace Lyrebird
                     else
                         return null;
                 }
-                catch (EndpointNotFoundException ex)
+                catch (EndpointNotFoundException)
                 {
                     Dispose();
                     return new List<RevitObject> { new RevitObject("Error", -1, "Lyrebird Service is not open.") };
@@ -129,7 +130,7 @@ namespace Lyrebird
                     else
                         return null;
                 }
-                catch (EndpointNotFoundException ex)
+                catch (EndpointNotFoundException)
                 {
                     Dispose();
                     return new List<string> { "Lyrebird Service is not open." };
@@ -160,7 +161,7 @@ namespace Lyrebird
                     else
                         return null; ;
                 }
-                catch (EndpointNotFoundException ex)
+                catch (EndpointNotFoundException)
                 {
                     Dispose();
                     return new List<RevitParameter> { new RevitParameter("Error", "Error", "Lyrebird Service is not open", true) };
@@ -191,7 +192,7 @@ namespace Lyrebird
                     else
                         return null;
                 }
-                catch (EndpointNotFoundException ex)
+                catch (EndpointNotFoundException)
                 {
                     Dispose();
                     return new List<string> { "Lyrebird Service is not open." };
@@ -225,8 +226,9 @@ namespace Lyrebird
                     return false;
                 }
             }
-            return false;
+            return false;                  
         }
+        */
 
         public Dictionary<string, object> LBAction(Dictionary<string, object> inputs)
         {
@@ -235,16 +237,18 @@ namespace Lyrebird
             {
 //                System.Windows.MessageBox.Show(
 //                    "At the start of the LyrebirdCommon.LBChannel.LBAction method, so apparently I'm valid so far");
-                var outputs = new Dictionary<string, object>();
+                Dictionary<string, object> outputs;
                 _service.LbAction(inputs, out outputs);
+                System.Windows.MessageBox.Show("LBChannel: " + outputs.Count.ToString());
                 return outputs;
             }
-            catch
+            catch (Exception e)
             {
+                System.Windows.MessageBox.Show("LBChannel Error\n" + e.Message);
                 return null;
             }
         }
-
+          /*
         public List<string> GetRevitAPIPath()
         {
             if (IsValid())
@@ -266,6 +270,7 @@ namespace Lyrebird
             }
             return null;
         }
+        */
 
         public bool IsValid()
         {

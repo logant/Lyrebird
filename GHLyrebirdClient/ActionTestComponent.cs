@@ -71,7 +71,7 @@ namespace Lyrebird
                     //    AppDomain.CurrentDomain.Load(refPath);
                     //}
 
-                    Dictionary<string, object> input = new Dictionary<string, object> {{"CommandGuid", Lyrebird.GetRevitDocName.CommandGuid}, {"AssemblyPath", this.GetType().Assembly.Location} };
+                    Dictionary<string, object> input = new Dictionary<string, object> {{"CommandGuid", ComponentGuid}};
                     var output = channel.LBAction(input);
                     if (output == null || !output.ContainsKey("docName"))
                     {

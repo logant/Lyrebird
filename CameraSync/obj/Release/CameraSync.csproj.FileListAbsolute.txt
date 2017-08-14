@@ -1,0 +1,11 @@
+D:\Development\GitHub\Lyrebird\CameraSync\obj\Release\CameraSync.csprojResolveAssemblyReference.cache
+D:\Development\GitHub\Lyrebird\CameraSync\bin\CameraSync.dll
+D:\Development\GitHub\Lyrebird\CameraSync\bin\CameraSync.pdb
+D:\Development\GitHub\Lyrebird\CameraSync\bin\LyrebirdCommon.dll
+D:\Development\GitHub\Lyrebird\CameraSync\bin\LINE.Geometry.dll
+D:\Development\GitHub\Lyrebird\CameraSync\bin\LyrebirdCommon.pdb
+D:\Development\GitHub\Lyrebird\CameraSync\bin\LINE.Geometry.pdb
+D:\Development\GitHub\Lyrebird\CameraSync\obj\Release\CameraSync.dll
+D:\Development\GitHub\Lyrebird\CameraSync\obj\Release\CameraSync.pdb
+D:\Development\GitHub\Lyrebird\CameraSync\bin\Newtonsoft.Json.dll
+D:\Development\GitHub\Lyrebird\CameraSync\bin\Newtonsoft.Json.xml

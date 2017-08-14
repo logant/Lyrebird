@@ -10,6 +10,7 @@ namespace Lyrebird
     [ServiceContract]
     public interface ILyrebirdService
     {
+        /*
         [OperationContract]
         bool GetDocumentName(out string docName);
 
@@ -27,11 +28,13 @@ namespace Lyrebird
 
         [OperationContract]
         bool RecieveData(List<RevitObject> elements, Guid uniqueId, string nickName);
-
+          */
         [OperationContract]
         bool LbAction(Dictionary<string, object> inputs, out Dictionary<string, object> outputs);
 
+        /*
         [OperationContract]
         bool GetApiPath(out List<string> apiDirectory);
+        */
     }
 }

@@ -16,7 +16,6 @@ namespace Lyrebird
             {
                 Assembly.LoadFrom(installPath + "\\RevitAPI.dll");
                 Assembly.LoadFrom(installPath + "\\RevitAPIUI.dll");
-//                System.Windows.Forms.MessageBox.Show("In the GetDocName constructor.");
             }
             catch (Exception e)
             {
@@ -28,7 +27,6 @@ namespace Lyrebird
         {
             try
             {
-//                System.Windows.Forms.MessageBox.Show("In the GetDocName constructor.");
                 string docName = uiApp.ActiveUIDocument.Document.Title;
                 outputs = new Dictionary<string, object>{{"docName", docName}};
                 return true;
@@ -41,6 +39,6 @@ namespace Lyrebird
             }
         }
 
-        public static Guid CommandGuid => new Guid("a7638694-0ad6-4e40-8e2b-a26a427c0678");
+        public static Guid CommandGuid => new Guid("8a9ce1a6-9861-49f0-8b3b-535779d197b5");
     }
 }

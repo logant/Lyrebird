@@ -1,0 +1,101 @@
+﻿<Window x:Class="Lyrebird.LyrebirdSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Lyrebird"
+             mc:Ignorable="d" 
+             Title="Lyrebird Settings"
+             Background="Transparent"
+             WindowStyle="None"
+             AllowsTransparency="True"
+             WindowStartupLocation="CenterOwner"
+             ResizeMode="NoResize"
+             Height="150" Width="300">
+    <Window.Resources>
+        <Style x:Key="typicalButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#FF404040"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#FF606060"/>
+        </Style>
+    </Window.Resources>
+    <Border MouseLeftButtonDown="UIElement_OnMouseLeftButtonDown">
+        <Grid>
+            <!--Main Background-->
+            <Rectangle Fill="WhiteSmoke" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0"/>
+            <Rectangle Fill="#FF404040" Width="1" VerticalAlignment="Stretch" HorizontalAlignment="Left" Margin="0"/>
+            <Rectangle Fill="#FF404040" Width="1" VerticalAlignment="Stretch" HorizontalAlignment="Right" Margin="0"/>
+            <Rectangle Fill="#FF404040" Height="1" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0"/>
+            <Rectangle Fill="#FF404040" Height="15" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0"/>
+
+            <!--CONTROLS-->
+            <Label Content="Lyrebird Settings" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top" FontSize="16" Foreground="#FF404040" FontFamily="Arial" FontWeight="Bold"/>
+            <Label Content="GH Lyrebird Path:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,40,0,0" FontFamily="Arial" Foreground="#FF404040"/>
+            <TextBox Name="pathTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="20,65,50,0" Height="25" FontSize="12" TextAlignment="Center"/>
+            <Button x:Name="browseButton" Click="BrowseButton_OnClick" Style="{StaticResource typicalButtonStyle}" MouseEnter="BrowseButton_OnMouseEnter" MouseLeave="BrowseButton_OnMouseLeave"
+                    HorizontalAlignment="Right" Width="30" Height="30" VerticalAlignment="Top" Margin="0,65,10,0" ToolTip="Cancel the curve segmentation">
+                <Button.Content>
+                    <Grid Width="30" Height="30">
+                        <Rectangle x:Name="browseRect" Fill="Transparent"/>
+                        <TextBlock Text="..." TextAlignment="Center"/>
+                    </Grid>
+                </Button.Content>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter Margin="{TemplateBinding Control.Padding}"
+                                          HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                                          ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"
+                                          RecognizesAccessKey="True"
+                                          Content="{TemplateBinding ContentControl.Content}"/>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button x:Name="cancelButton" Click="CancelButton_OnClick" Style="{StaticResource typicalButtonStyle}" MouseEnter="CancelButton_OnMouseEnter" MouseLeave="CancelButton_OnMouseLeave"
+                    HorizontalAlignment="Right" Width="80" Height="30" VerticalAlignment="Bottom" Margin="0,0,10,15" ToolTip="Cancel the curve segmentation">
+                <Button.Content>
+                    <Grid Width="80" Height="30">
+                        <Rectangle x:Name="cancelRect" Fill="Transparent"/>
+                        <TextBlock Text="Cancel" TextAlignment="Center"/>
+                    </Grid>
+                </Button.Content>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter Margin="{TemplateBinding Control.Padding}"
+                                          HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                                          ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"
+                                          RecognizesAccessKey="True"
+                                          Content="{TemplateBinding ContentControl.Content}"/>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button x:Name="okButton" Click="OkButton_OnClick" Style="{StaticResource typicalButtonStyle}" MouseEnter="OkButton_OnMouseEnter" MouseLeave="OkButton_OnMouseLeave"
+                    HorizontalAlignment="Right" Width="80" Height="30" VerticalAlignment="Bottom" Margin="0,0,90,15" ToolTip="Accept the quantity and segment the curve">
+                <Button.Content>
+                    <Grid Width="80" Height="30">
+                        <Rectangle x:Name="okRect" Fill="Transparent"/>
+                        <TextBlock Text="OK" TextAlignment="Center"/>
+                    </Grid>
+                </Button.Content>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter Margin="{TemplateBinding Control.Padding}"
+                                          HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                                          ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"
+                                          RecognizesAccessKey="True"
+                                          Content="{TemplateBinding ContentControl.Content}"/>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+    </Border>
+</Window>

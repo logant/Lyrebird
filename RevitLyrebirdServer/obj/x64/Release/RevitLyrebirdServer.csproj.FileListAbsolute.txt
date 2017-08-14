@@ -20,3 +20,9 @@ E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.Propert
 E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\RevitLyrebirdServer.csproj.GenerateResource.Cache
 E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.dll
 E:\Development\Git\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.pdb
+D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\LyrebirdSettingsWindow.g.cs
+D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird_MarkupCompile.cache
+D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird_MarkupCompile.lref
+D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\Lyrebird.dll.config
+D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\LyrebirdSettingsWindow.baml
+D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.g.resources

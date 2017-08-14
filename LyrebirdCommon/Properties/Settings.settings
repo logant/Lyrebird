@@ -5,5 +5,8 @@
     <Setting Name="BaseAddress" Type="System.String" Scope="Application">
       <Value Profile="(Default)">net.pipe://localhost/logant/LyrebirdServer</Value>
     </Setting>
+    <Setting Name="LBComponentPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>
