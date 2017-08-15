@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 
 using Grasshopper.Kernel;
-using Rhino.Geometry;
+using RG = Rhino.Geometry;
 
-using lg = LINE.Geometry;
+using LG = LINE.Geometry;
 
 namespace Lyrebird
 {
@@ -14,10 +14,10 @@ namespace Lyrebird
         private string _serverVersion = "Revit2017";
 
         private string viewName = null;
-        Point3d cameraPosition = Point3d.Unset;
-        Point3d cameraTarget = Point3d.Unset;
+        RG.Point3d cameraPosition = RG.Point3d.Unset;
+        RG.Point3d cameraTarget = RG.Point3d.Unset;
         private bool isPerspective = false;
-        Vector3d cameraUpVector = Vector3d.Unset;
+        RG.Vector3d cameraUpVector = RG.Vector3d.Unset;
 
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
@@ -27,7 +27,7 @@ namespace Lyrebird
         /// new tabs/panels will automatically be created.
         /// </summary>
         public GetCameraComponent()
-          : base("GetRevitCamera", "RevCam",
+          : base("GetRevitCamera", "GetRevCam",
               "Get the Revit Camera properties to sync with a Rhino Camera.",
               "Misc", "Lyrebird")
         {
@@ -75,7 +75,8 @@ namespace Lyrebird
                 {
                     Dictionary<string, object> input = new Dictionary<string, object> { { "CommandGuid", ComponentGuid } };
                     Dictionary<string, object> output = channel.LBAction(input);
-                    System.Windows.Forms.MessageBox.Show("output Null? " + (output == null).ToString());
+                    
+                    //System.Windows.Forms.MessageBox.Show("output Null? " + (output == null).ToString());
                     if (output == null || !output.ContainsKey("viewName"))
                         return;
 
@@ -83,21 +84,17 @@ namespace Lyrebird
                     {
                         viewName = output["viewName"].ToString();
 
-                        string camPosJson = output["cameraLoc"].ToString();
-                        lg.Point3d camPtLINE = Newtonsoft.Json.JsonConvert.DeserializeObject<lg.Point3d>(camPosJson);
-                        cameraPosition = LINE.Geometry.RhinoConvert.Point3dToRhino(camPtLINE);
+                        LG.Point3d camPos = LG.JsonConvert.Point3dFromJson(output["cameraLoc"].ToString());
+                        cameraPosition = LG.RhinoConvert.Point3dToRhino(camPos);
 
-                        string camDirJson = output["cameraDir"].ToString();
-                        lg.Vector3d camDirLG =
-                            Newtonsoft.Json.JsonConvert.DeserializeObject<lg.Vector3d>(camDirJson);
-                        var dir = lg.RhinoConvert.Vector3dToRhino(camDirLG);
+                        LG.Vector3d camDir = LG.JsonConvert.Vector3dFromJson(output["cameraDir"].ToString());
+                        var dir = LG.RhinoConvert.Vector3dToRhino(camDir);
                         cameraTarget = cameraPosition + dir;
 
                         isPerspective = (bool)output["isPerspective"];
 
-                        string camUpJson = output["cameraUp"].ToString();
-                        lg.Vector3d upVectLG = Newtonsoft.Json.JsonConvert.DeserializeObject<lg.Vector3d>(camUpJson);
-                        cameraUpVector = lg.RhinoConvert.Vector3dToRhino(upVectLG);
+                        LG.Vector3d camUp = LG.JsonConvert.Vector3dFromJson(output["cameraUp"].ToString());
+                        cameraUpVector = LG.RhinoConvert.Vector3dToRhino(camUp);
                     }
                     catch (Exception e)
                     {

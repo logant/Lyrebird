@@ -239,12 +239,13 @@ namespace Lyrebird
 //                    "At the start of the LyrebirdCommon.LBChannel.LBAction method, so apparently I'm valid so far");
                 Dictionary<string, object> outputs;
                 _service.LbAction(inputs, out outputs);
-                System.Windows.MessageBox.Show("LBChannel: " + outputs.Count.ToString());
+                //System.Windows.MessageBox.Show("LBChannel: " + outputs.Count.ToString());
                 return outputs;
             }
             catch (Exception e)
             {
-                System.Windows.MessageBox.Show("LBChannel Error\n" + e.Message);
+                System.Windows.MessageBox.Show("LBChannel Error\n" + e.ToString());
+                //System.Windows.MessageBox.Show("LBChannel Inner Exception\n" + e.InnerException.ToString());
                 return null;
             }
         }

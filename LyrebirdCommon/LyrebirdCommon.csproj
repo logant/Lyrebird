@@ -68,6 +68,7 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GeometryWrappers.cs" />
     <Compile Include="ILyrebirdAction.cs" />
     <Compile Include="ILyrebirdService.cs" />
     <Compile Include="LyrebirdChannel.cs" />

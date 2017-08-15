@@ -1,9 +1,7 @@
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\Lyrebird.dll
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\Lyrebird.pdb
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LyrebirdCommon.dll
-D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LINE.Geometry.dll
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LyrebirdCommon.pdb
-D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\bin\x64\Release\LINE.Geometry.pdb
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\RevitLyrebirdServer.csprojResolveAssemblyReference.cache
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\Lyrebird.Properties.Resources.resources
 D:\Development\GitHub\Lyrebird\RevitLyrebirdServer\obj\x64\Release\RevitLyrebirdServer.csproj.GenerateResource.Cache

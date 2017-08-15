@@ -25,8 +25,8 @@ namespace Lyrebird
         LinearGradientBrush eBrush = new LinearGradientBrush(
             Color.FromArgb(255, 195, 195, 195),
             Color.FromArgb(255, 245, 245, 245),
-            new Point(0, 0),
-            new Point(0, 1));
+            new System.Windows.Point(0, 0),
+            new System.Windows.Point(0, 1));
         SolidColorBrush lBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0, 0, 0, 0));
 
         public LyrebirdSettings()

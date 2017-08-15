@@ -76,3 +76,5 @@ D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\pt-BR\AdWindows.re
 D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\ru-RU\AdWindows.resources.dll
 D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\zh-CN\AdWindows.resources.dll
 D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\zh-TW\AdWindows.resources.dll
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\Newtonsoft.Json.dll
+D:\Development\GitHub\Lyrebird\LyrebirdCommon\bin\x64\Release\Newtonsoft.Json.xml

@@ -13,7 +13,6 @@ namespace Lyrebird
     [ServiceBehavior]
     public class LBService : ILyrebirdService
     {
-        private string currentDocName = "NULL";
         private static readonly object Locker = new object();
         private const int WAIT_TIMEOUT = 1000;
 
@@ -82,71 +81,85 @@ namespace Lyrebird
                         dlg.Show();
                         return false;
                     }
+
+                   
+
                     
+                    LBApp.Handler.Inputs = inputs;
+                    LBApp.Handler.Outputs = outputs;
+                    //LBApp.Handler.Inputs = inputs;
+                    //LBApp.Handler.Outputs = outputs;
+                    LBApp.ExEvent.Raise();
+                    //LBApp.Handler.Execute(uiApp);
 
-                    if (!inputs.ContainsKey("CommandGuid"))
-                        return false;
-                    if (allowMessages)
-                        System.Windows.MessageBox.Show("CommandGuid key is in the dictionary");
-
-                    Guid cmdGuid = (Guid) inputs["CommandGuid"];
-                    if (cmdGuid == Guid.Empty)
-                        return false;
-                    if (allowMessages)
-                        System.Windows.MessageBox.Show("CommandGuid has been found");
-
-                    string dirPath = Properties.Settings.Default.LBComponentPath;
-                    Assembly assembly;
-                    Type cmdType;
-                    if (!GetCommandAssembly(cmdGuid, Directory.GetFiles(dirPath, "*.gha"), out assembly, out cmdType))
+                    outputs = LBApp.Handler.Outputs;
+                    if (outputs == null)
                         return false;
 
-                    if (allowMessages)
-                        System.Windows.MessageBox.Show("Assemblies have been found");
-
-                    // Load the RevitAPI libraries.
-                    string installPath = null;
-                    foreach (var reference in typeof(LBService).Assembly.GetReferencedAssemblies())
-                    {
-                        string refPath = Assembly.ReflectionOnlyLoad(reference.FullName).Location
-                            .ToLower();
-                        if (refPath.Contains("revitapi.dll") || refPath.Contains("revitapiui.dll"))
-                        {
-                            installPath = new FileInfo(refPath).DirectoryName;
-                            break;
-                        }
-                    }
-
-                    if (installPath == null)
-                        return false;
-                    if (allowMessages)
-                        System.Windows.MessageBox.Show("installPath has been found");
-
-                    ConstructorInfo ctor = cmdType.GetConstructor(new[] {typeof(string)});
-
-                    object inst = ctor.Invoke(new object[] {installPath});
-                    if (inst == null)
-                        return false;
-
-                    if (allowMessages)
-                        System.Windows.MessageBox.Show("type has been instantiated.");
-
-                    var method = cmdType.GetMethod("Command");
-                    object[] parameters = {uiApp, inputs, new Dictionary<string, object>()};
-
-                    object result = method.Invoke(inst, parameters);
-
-                    bool boolResult = (bool) result;
-                    if (boolResult)
-                        outputs = (Dictionary<string, object>) parameters[2];
-
-                    //System.Windows.MessageBox.Show("'outputs' Keys: " + outputs.Count.ToString());
                     return true;
 
+                    //if (!inputs.ContainsKey("CommandGuid"))
+                    //    return false;
+                    //if (allowMessages)
+                    //    System.Windows.MessageBox.Show("CommandGuid key is in the dictionary");
+
+                    //Guid cmdGuid = (Guid) inputs["CommandGuid"];
+                    //if (cmdGuid == Guid.Empty)
+                    //    return false;
+                    //if (allowMessages)
+                    //    System.Windows.MessageBox.Show("CommandGuid has been found");
+
+                    //string dirPath = Properties.Settings.Default.LBComponentPath;
+                    //Assembly assembly;
+                    //Type cmdType;
+                    //if (!GetCommandAssembly(cmdGuid, Directory.GetFiles(dirPath, "*.gha"), out assembly, out cmdType))
+                    //    return false;
+
+                    //if (allowMessages)
+                    //    System.Windows.MessageBox.Show("Assemblies have been found");
+
+                    //// Load the RevitAPI libraries.
+                    //string installPath = null;
+                    //foreach (var reference in typeof(LBService).Assembly.GetReferencedAssemblies())
+                    //{
+                    //    string refPath = Assembly.ReflectionOnlyLoad(reference.FullName).Location
+                    //        .ToLower();
+                    //    if (refPath.Contains("revitapi.dll") || refPath.Contains("revitapiui.dll"))
+                    //    {
+                    //        installPath = new FileInfo(refPath).DirectoryName;
+                    //        break;
+                    //    }
+                    //}
+
+                    //if (installPath == null)
+                    //    return false;
+                    //if (allowMessages)
+                    //    System.Windows.MessageBox.Show("installPath has been found");
+
+                    //ConstructorInfo ctor = cmdType.GetConstructor(new[] {typeof(string)});
+
+                    //object inst = ctor.Invoke(new object[] {installPath});
+                    //if (inst == null)
+                    //    return false;
+
+                    //if (allowMessages)
+                    //    System.Windows.MessageBox.Show("type has been instantiated.");
+
+                    //var method = cmdType.GetMethod("Command");
+                    //object[] parameters = {uiApp, inputs, new Dictionary<string, object>()};
+
+                    //object result = method.Invoke(inst, parameters);
+
+                    //bool boolResult = (bool) result;
+                    //if (boolResult)
+                    //    outputs = (Dictionary<string, object>) parameters[2];
+
+                    ////System.Windows.MessageBox.Show("'outputs' Keys: " + outputs.Count.ToString());
+                    //return true;
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show("I threw an exception.  :(\n" + ex.ToString());
+                    System.Windows.MessageBox.Show("I threw an exception.  :\n" + ex.Message);
                     //do nothing
                 }
                 Monitor.Wait(Locker, WAIT_TIMEOUT);

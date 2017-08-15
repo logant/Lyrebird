@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using LG = LINE.Geometry;
 
 namespace Lyrebird
 {
@@ -46,35 +47,17 @@ namespace Lyrebird
                 XYZ fDir = view3d.GetOrientation().ForwardDirection;
                 XYZ uDir = view3d.GetOrientation().UpDirection;
 
-                //System.Windows.Forms.MessageBox.Show("CommandTest" +
-                //                                     "\nviewName:\t" + view3d.ViewName +
-                //                                     "\nisPerspective:\t" + isPerspective.ToString() +
-                //                                     "\ncameraPos:\t" + cLoc.ToString() +
-                //                                     "\ncamFwdDir:\t" + fDir.ToString() +
-                //                                     "\ncamUpDir:\t" + uDir.ToString());
-                
-                LINE.Geometry.Point3d cameraLocation =
-                    LINE.Geometry.RevitConvert.Point3dFromRevit(cLoc);
-                LINE.Geometry.Vector3d cameraDir =
-                    LINE.Geometry.RevitConvert.Vector3dFromRevit(fDir);
-                LINE.Geometry.Vector3d cameraUpDir =
-                    LINE.Geometry.RevitConvert.Vector3dFromRevit(uDir);
-
-
-                //System.Windows.Forms.MessageBox.Show("Converted:" +
-                //                                     "\nviewName:\t" + view3d.ViewName +
-                //                                     "\nisPerspective:\t" + isPerspective.ToString() +
-                //                                     "\ncameraPos:\t" + cameraLocation.ToString() +
-                //                                     "\ncamFwdDir:\t" + cameraDir.ToString() +
-                //                                     "\ncamUpDir:\t" + cameraUpDir.ToString());
-
+                LG.Point3d cameraLocation = LG.RevitConvert.Point3dFromRevit(cLoc);
+                LG.Vector3d cameraDir = LG.RevitConvert.Vector3dFromRevit(fDir);
+                LG.Vector3d cameraUpDir = LG.RevitConvert.Vector3dFromRevit(uDir);
+       
                 outputs = new Dictionary<string, object>
                 {
                     {"viewName", view3d.ViewName},
                     {"isPerspective", isPerspective},
                     {"cameraLoc", JsonConvert.SerializeObject(cameraLocation, Formatting.Indented)},
-                    {"cameraDir", JsonConvert.SerializeObject(cameraDir, Formatting.Indented)},
-                    {"cameraUp", JsonConvert.SerializeObject(cameraUpDir, Formatting.Indented)}
+                    {"cameraDir",  JsonConvert.SerializeObject(cameraDir, Formatting.Indented)},
+                    {"cameraUp",  JsonConvert.SerializeObject(cameraUpDir, Formatting.Indented)}
                 };
                 return true;
             }

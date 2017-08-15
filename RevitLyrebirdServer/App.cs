@@ -22,6 +22,9 @@ namespace Lyrebird
         internal static LBHandler Handler = null;
         internal static ExternalEvent ExEvent = null;
 
+        //public LBHandler LBHandle => Handler;
+        //public ExternalEvent ExtEvent => ExEvent;
+
         public static LBApp Instance => _thisApp;
 
         public Result OnShutdown(UIControlledApplication application)
@@ -113,6 +116,7 @@ namespace Lyrebird
                     serviceHost.AddServiceEndpoint(new System.ServiceModel.Discovery.UdpDiscoveryEndpoint());
                     serviceHost.AddServiceEndpoint(typeof(ILyrebirdService), nnpb, string.Empty);
                     serviceHost.Open();
+                    serviceRunning = true;
                     if (serviceRunning)
                     {
                         // Remove any tasks sent while the server was off
