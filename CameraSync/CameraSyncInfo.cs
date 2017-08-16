@@ -10,7 +10,7 @@ namespace Lyrebird
         {
             get
             {
-                return "CameraSync";
+                return "LyrebirdCameraSync";
             }
         }
         public override Bitmap Icon
@@ -42,7 +42,7 @@ namespace Lyrebird
             get
             {
                 //Return a string identifying you or your company.
-                return "";
+                return "Timothy Logan";
             }
         }
         public override string AuthorContact
@@ -50,7 +50,7 @@ namespace Lyrebird
             get
             {
                 //Return a string representing your preferred contact details.
-                return "";
+                return "www.github.com/logant";
             }
         }
     }

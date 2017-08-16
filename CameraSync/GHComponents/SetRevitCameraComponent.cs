@@ -60,7 +60,8 @@ namespace Lyrebird
 
             if (send && _reset)
             {
-                // set _reset to false.  This will prevent lyrebird from sending information if you forget to turn the send trigger off.
+                // set _reset to false. This will prevent lyrebird from sending information 
+                // if you used a toggle and forget to turn the send trigger off.
                 _reset = false;
 
                 // Get the Rhino Viewport information
@@ -71,17 +72,12 @@ namespace Lyrebird
                     {
                         rhinoVP = Rhino.RhinoDoc.ActiveDoc.Views.Find(rhinoVPName, false).ActiveViewport;
                     }
-                    catch
-                    {
-                        // Do nothing
-                    }
-                    
+                    catch { } // Ignore
                 }
                 if (!string.IsNullOrEmpty(rhinoVPName))
                 {
                     rhinoVP = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView.ActiveViewport;
                 }
-
 
                 // Create the Channel
                 var channel = new LBChannel(_serverVersion);
@@ -109,8 +105,6 @@ namespace Lyrebird
                     };
 
                     Dictionary<string, object> output = channel.LBAction(input);
-
-                    //System.Windows.Forms.MessageBox.Show("output Null? " + (output == null).ToString());
                     if (output == null || !output.ContainsKey("viewName"))
                         return;
                 }
@@ -129,7 +123,7 @@ namespace Lyrebird
         {
             get
             {
-                //You can add image files to your project resources and access them like this:
+                // You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
                 return null;
             }

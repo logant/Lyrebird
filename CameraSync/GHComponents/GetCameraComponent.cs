@@ -80,19 +80,20 @@ namespace Lyrebird
                     if (output == null || !output.ContainsKey("viewName"))
                         return;
 
+                    // TODO: Should probably have this set the RhinoViewport camera
+                    //       No reason to rely on another plugin (Horester probably) to set the camera when
+                    //       this plugin can manage all of that on its own, since that's what it's designed to do.
+                    //       Consider whether it should do it when triggered (pull info, set camera) or as a second
+                    //       trigger to set camera to retrieved settings.
                     try
                     {
                         viewName = output["viewName"].ToString();
-
                         LG.Point3d camPos = LG.JsonConvert.Point3dFromJson(output["cameraLoc"].ToString());
                         cameraPosition = LG.RhinoConvert.Point3dToRhino(camPos);
-
                         LG.Vector3d camDir = LG.JsonConvert.Vector3dFromJson(output["cameraDir"].ToString());
                         var dir = LG.RhinoConvert.Vector3dToRhino(camDir);
                         cameraTarget = cameraPosition + dir;
-
                         isPerspective = (bool)output["isPerspective"];
-
                         LG.Vector3d camUp = LG.JsonConvert.Vector3dFromJson(output["cameraUp"].ToString());
                         cameraUpVector = LG.RhinoConvert.Vector3dToRhino(camUp);
                     }

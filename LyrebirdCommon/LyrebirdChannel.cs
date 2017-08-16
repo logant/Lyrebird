@@ -6,6 +6,7 @@ namespace Lyrebird
 {
     public class LBChannel : IDisposable
     {
+        #region LBChannel Properties
         ChannelFactory<ILyrebirdService> _factory;
         ILyrebirdService _service;
         NetNamedPipeBinding _binding;
@@ -13,14 +14,16 @@ namespace Lyrebird
         readonly object _locker;
         bool _disposed;
         readonly string _productId;
+        #endregion
 
+        #region Construct/Dispose of the Channel
         public LBChannel(string prodId)
         {
             _productId = prodId;
             _locker = new object();
             _disposed = false;
         }
-
+        
         /// <summary>
         /// Create the new endpoint for the service and make sure the ChannelFactory and ILyrebirdService are set.
         /// The LBChannel will be used by the Client to connect to the Server which actually implements the ILyrebirdService.
@@ -51,7 +54,64 @@ namespace Lyrebird
 
             return created;
         }
+        
+        public bool IsValid()
+        {
+            if (null != _factory && null != _service && false == _disposed)
+                return true;
+            return false;
+        }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                lock (_locker)
+                {
+                    if (null != _service)
+                    {
+                        ((IClientChannel)_service).Abort();
+                        _service = null;
+                    }
+
+                    if (null != _factory)
+                    {
+                        _factory.Abort();
+                        _factory = null;
+                    }
+
+                    _endPoint = null;
+                    _binding = null;
+                }
+                _disposed = true;
+            }
+
+        }
+        #endregion
+        
+        public Dictionary<string, object> LBAction(Dictionary<string, object> inputs)
+        {
+            if (!IsValid()) return null;
+            try
+            {
+                Dictionary<string, object> outputs;
+                _service.LbAction(inputs, out outputs);
+                return outputs;
+            }
+            catch (Exception e)
+            {
+                System.Windows.MessageBox.Show("LBChannel Error\n" + e.ToString());
+                return null;
+            }
+        }
+
+        #region Probably Garbage, Removal Pending
         /*
         /// <summary>
         /// LBChannel call of the ILyrebirdService GetDocumentName method.
@@ -230,25 +290,7 @@ namespace Lyrebird
         }
         */
 
-        public Dictionary<string, object> LBAction(Dictionary<string, object> inputs)
-        {
-            if (!IsValid()) return null;
-            try
-            {
-//                System.Windows.MessageBox.Show(
-//                    "At the start of the LyrebirdCommon.LBChannel.LBAction method, so apparently I'm valid so far");
-                Dictionary<string, object> outputs;
-                _service.LbAction(inputs, out outputs);
-                //System.Windows.MessageBox.Show("LBChannel: " + outputs.Count.ToString());
-                return outputs;
-            }
-            catch (Exception e)
-            {
-                System.Windows.MessageBox.Show("LBChannel Error\n" + e.ToString());
-                //System.Windows.MessageBox.Show("LBChannel Inner Exception\n" + e.InnerException.ToString());
-                return null;
-            }
-        }
+        
           /*
         public List<string> GetRevitAPIPath()
         {
@@ -272,44 +314,6 @@ namespace Lyrebird
             return null;
         }
         */
-
-        public bool IsValid()
-        {
-            if (null != _factory && null != _service && false == _disposed)
-                return true;
-            return false;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public void Dispose(bool disposing)
-        {
-            if (!_disposed && disposing)
-            {
-                lock (_locker)
-                {
-                    if (null != _service)
-                    {
-                        ((IClientChannel)_service).Abort();
-                        _service = null;
-                    }
-
-                    if (null != _factory)
-                    {
-                        _factory.Abort();
-                        _factory = null;
-                    }
-
-                    _endPoint = null;
-                    _binding = null;
-                }
-                _disposed = true;
-            }
-
-        }
+        #endregion
     }
 }

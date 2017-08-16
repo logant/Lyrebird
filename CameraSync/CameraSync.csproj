@@ -80,11 +80,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actions\GetRevitCamera.cs" />
+    <Compile Include="Actions\SetRevitCamera.cs" />
     <Compile Include="GHComponents\GetCameraComponent.cs" />
     <Compile Include="CameraSyncInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="GHComponents\SetRevitCameraComponent.cs" />
-    <Compile Include="SetRevitCamera.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
