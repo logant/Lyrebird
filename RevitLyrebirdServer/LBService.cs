@@ -58,5 +58,10 @@ namespace Lyrebird
 
             return (outputs == null);
         }
+
+        public bool Ping()
+        {
+            return true;
+        }
     }
 }

@@ -18,8 +18,16 @@ namespace Lyrebird
         /// <returns></returns>
         [OperationContract]
         bool LbAction(Dictionary<string, object> inputs, out Dictionary<string, object> outputs);
-        
+
+        /// <summary>
+        /// Hopefully a quick Ping operation just to see if the endpoint is listening or not.
+        /// </summary>
+        /// <returns></returns>
+        [OperationContract]
+        bool Ping();
+
         #region Probably Garbage, Removal Pending
+
         /*
         [OperationContract]
         bool GetDocumentName(out string docName);
@@ -42,6 +50,7 @@ namespace Lyrebird
         [OperationContract]
         bool GetApiPath(out List<string> apiDirectory);
         */
+
         #endregion
     }
 }

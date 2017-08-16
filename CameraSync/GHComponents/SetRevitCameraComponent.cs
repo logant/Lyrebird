@@ -74,10 +74,12 @@ namespace Lyrebird
                     }
                     catch { } // Ignore
                 }
-                if (!string.IsNullOrEmpty(rhinoVPName))
+                if (null == rhinoVP)
                 {
                     rhinoVP = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView.ActiveViewport;
                 }
+                if (null == revitVPName)
+                    revitVPName = string.Empty;
 
                 // Create the Channel
                 var channel = new LBChannel(_serverVersion);

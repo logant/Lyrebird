@@ -46,6 +46,23 @@ namespace Lyrebird
                     else
                         created = false;
                 }
+                try
+                {
+                    _service.Ping();
+                }
+                catch (EndpointNotFoundException)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Make sure the Lyrebird Service is turned on in the appropriate Revit application before activating this component.");
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+                
+
             }
             catch (Exception ex)
             {
