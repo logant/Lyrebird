@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Windows.Forms;
 using Grasshopper.Kernel;
+using Microsoft.Win32;
 using Rhino.Geometry;
 using LG = LINE.Geometry;
 using Newtonsoft.Json;
@@ -10,6 +11,8 @@ namespace Lyrebird
 {
     public class SetRevitCameraComponent : GH_Component
     {
+        private ToolStripMenuItem _appItem;
+        private List<string> _appVersions;
         private bool _reset = true;
         private string _serverVersion = "Revit2017";
 
@@ -121,22 +124,68 @@ namespace Lyrebird
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
-        protected override System.Drawing.Bitmap Icon
-        {
-            get
-            {
-                // You can add image files to your project resources and access them like this:
-                // return Resources.IconForThisComponent;
-                return null;
-            }
-        }
+        // You can add image files to your project resources and access them like this:
+        // return Resources.IconForThisComponent;
+        protected override System.Drawing.Bitmap Icon => null;
 
         /// <summary>
         /// Gets the unique ID for this component. Do not change this ID after release.
         /// </summary>
-        public override Guid ComponentGuid
+        public override Guid ComponentGuid => new Guid("9e5496d1-2f48-4e46-83c8-35353eaa71ba");
+
+        /// <summary>
+        /// Primarily this is adding a menu item for each version of Revit that is found on the machine.
+        /// It does this by looking through the Registry for Revit. You can optionally target specific versions
+        /// of Revit explicitly instead of searching in case you don't want to support 
+        /// all versions with this particular component.
+        /// </summary>
+        /// <param name="iMenu"></param>
+        public override void AppendAdditionalMenuItems(ToolStripDropDown iMenu)
         {
-            get { return new Guid("9e5496d1-2f48-4e46-83c8-35353eaa71ba"); }
+            // Try to look in the registry to see which versions of Revit are installed
+            // Get current year+2 in order to get current version (+1) and beta (+2)
+            var maxYear = DateTime.Now.Year + 2;
+            _appItem = Menu_AppendItem(iMenu, "Application");
+            _appVersions = new List<string>();
+            var foundVersion = false;
+            for (var i = 0; i < 5; i++)
+            {
+                // Look for a registry key for the year
+                var currentYear = maxYear - i;
+                var regKey =
+                    Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Autodesk\Revit\Autodesk Revit " + currentYear +
+                                                     "\\Components");
+                if (null == regKey) continue;
+
+                _appVersions.Add("Revit" + currentYear);
+                if (_serverVersion.Contains(currentYear.ToString()))
+                    foundVersion = true;
+            }
+
+            // Add the menu items
+            for (var i = 0; i < _appVersions.Count; i++)
+            {
+                var version = _appVersions[i];
+                if (!foundVersion && i == 0)
+                {
+                    _appItem.DropDownItems.Add(Menu_AppendItem(iMenu, version, Menu_VersionClicked, true, true));
+                    _serverVersion = version;
+                }
+                else if (version == _serverVersion)
+                {
+                    _appItem.DropDownItems.Add(Menu_AppendItem(iMenu, version, Menu_VersionClicked, true, true));
+                }
+                else
+                {
+                    _appItem.DropDownItems.Add(Menu_AppendItem(iMenu, version, Menu_VersionClicked, true, false));
+                }
+            }
+        }
+
+        private void Menu_VersionClicked(object sender, EventArgs e)
+        {
+            var item = sender as ToolStripMenuItem;
+            if (item != null) _serverVersion = item.Text;
         }
     }
 }
